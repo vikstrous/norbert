@@ -136,6 +136,9 @@ class NettyPartitionedNetworkClient[PartitionedId](config: NetworkClientConfig, 
   def sendRequestToOneReplica[RequestMsg, ResponseMsg](id: PartitionedId, request: RequestMsg, serializer: Serializer[RequestMsg, ResponseMsg]) =
     underlying.sendRequestToOneReplica(id, request)(serializer, serializer)
 
+  def sendRequestToReplicas[RequestMsg, ResponseMsg](id: PartitionedId, request: RequestMsg, serializer: Serializer[RequestMsg, ResponseMsg]) =
+    underlying.sendRequestToReplicas(id, request, 0)(serializer, serializer)
+
   def sendRequestToOneReplica[RequestMsg, ResponseMsg](id: PartitionedId, requestBuilder: RequestBuilder[java.lang.Integer, RequestMsg], serializer: Serializer[RequestMsg, ResponseMsg]) =
     underlying.sendRequestToOneReplica(id, (node: SNode, ids: Set[Int]) => {
       val set = new java.util.HashSet[java.lang.Integer]
