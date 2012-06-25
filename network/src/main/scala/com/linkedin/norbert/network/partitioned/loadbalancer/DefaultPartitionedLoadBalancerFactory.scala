@@ -32,7 +32,6 @@ abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](serveRequest
     val partitionToNodeMap = generatePartitionToNodeMap(endpoints, numPartitions, serveRequestsIfPartitionMissing)
 
     def nextNode(id: PartitionedId) = nodeForPartition(partitionForId(id))
-
     /**
      * Calculates the id of the partition on which the specified <code>Id</code> resides.
      *
@@ -42,6 +41,11 @@ abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](serveRequest
      */
     def partitionForId(id: PartitionedId): Int = {
       calculateHash(id).abs % numPartitions
+    }
+
+    def nodesForPartitionedId(id: PartitionedId) = {
+      partitionToNodeMap.getOrElse(partitionForId(id), (Vector.empty[Endpoint], new AtomicInteger(0)))._1.toSet.map { (endpoint: Endpoint) => endpoint.node
+      }
     }
 
     def nodesForOneReplica(id: PartitionedId) = {

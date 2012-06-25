@@ -238,6 +238,23 @@ trait PartitionedNetworkClient[PartitionedId] extends BaseNetworkClient {
     new NorbertResponseIterator(nodes.size, queue)
   }
 
+  def sendRequestToReplicas[RequestMsg, ResponseMsg](id: PartitionedId, request: RequestMsg, maxRetry : Int = 0)
+                                                       (implicit is: InputSerializer[RequestMsg, ResponseMsg], os: OutputSerializer[RequestMsg, ResponseMsg]): ResponseIterator[ResponseMsg] = doIfConnected {
+    if (id == null || request == null) throw new NullPointerException
+    val nodes = loadBalancer.getOrElse(throw new ClusterDisconnectedException).fold(ex => throw ex, lb => lb.nodesForPartitionedId(id))
+    val queue = new ResponseQueue[ResponseMsg]
+    val resIter = new NorbertDynamicResponseIterator[ResponseMsg](nodes.size, queue)
+    nodes.foreach { case (node) =>
+      try {
+        doSendRequest(PartitionedRequest(request, node, Set(id), (node: Node, ids: Set[PartitionedId]) => request, is, os, if (maxRetry == 0) queue.+= else retryCallback[RequestMsg, ResponseMsg](queue.+=, maxRetry), 0, Some(resIter)))
+      } catch {
+        case ex: Exception => queue += Left(ex)
+      }
+    }
+    resIter
+  }
+
+
   /**
    * Sends a <code>RequestMessage</code> to a set of partitions in the cluster. This is a broadcast intended for read operations on the cluster, like searching every partition for some data.
    *

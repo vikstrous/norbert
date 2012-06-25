@@ -33,6 +33,17 @@ class JavaLbfToScalaLbf[PartitionedId](javaLbf: PartitionedLoadBalancerFactory[P
         sMap
       }
 
+      def nodesForPartitionedId(id: PartitionedId) = {
+        val jSet = lb.nodesForPartitionedId(id)
+        var sSet = Set.empty[SNode]
+        val entries = jSet.iterator
+        while(entries.hasNext) {
+          val node = javaNodeToScalaNode(entries.next)
+          sSet += node
+        }
+        sSet
+      }
+
       def nodesForPartitions(id: PartitionedId, partitions: Set[Int]) = {
         val jMap = lb.nodesForOneReplica(id)
         var sMap = Map.empty[com.linkedin.norbert.cluster.Node, Set[Int]]

@@ -54,6 +54,8 @@ class SimpleConsistentHashedLoadBalancer[PartitionedId](wheel: TreeMap[Int, Endp
 
   def nodesForOneReplica(id: PartitionedId) = throw new UnsupportedOperationException
 
+  def nodesForPartitionedId(id: PartitionedId) = throw new UnsupportedOperationException
+
   def nodesForPartitions(id: PartitionedId, partitions: Set[Int]) = throw new UnsupportedOperationException
 
   def nextNode(id: PartitionedId): Option[Node] = {

@@ -33,6 +33,11 @@ public interface PartitionedLoadBalancer<PartitionedId> {
    */
   Node nextNode(PartitionedId id);
 
+  /**
+   * Returns all replica nodes for the same partitionedId
+   * @return the <code>Nodes</code> to multicast the next messages to each replica
+   */
+  Set<Node> nodesForPartitionedId(PartitionedId id);
 
   /**
    * Returns a set of nodes represents one replica of the cluster, this is used by the PartitionedNetworkClient to handle

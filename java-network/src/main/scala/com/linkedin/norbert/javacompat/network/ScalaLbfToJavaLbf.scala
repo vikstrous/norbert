@@ -30,6 +30,13 @@ class ScalaLbfToJavaLbf[PartitionedId](scalaLbf: SPartitionedLoadBalancerFactory
         }
       }
 
+      def nodesForPartitionedId(id: PartitionedId) = {
+        val set = scalaBalancer.nodesForPartitionedId(id)
+        val jSet = new java.util.HashSet[Node]()
+        set.foldLeft(jSet) { case (jSet, node) => {jSet.add(node); jSet} }
+        jSet
+      }
+
       def nodesForPartitions(id: PartitionedId, partitions: java.util.Set[java.lang.Integer]) = {
         val replica = scalaBalancer.nodesForPartitions(id, partitions)
         val result = new java.util.HashMap[Node, java.util.Set[java.lang.Integer]](replica.size)

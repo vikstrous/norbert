@@ -42,7 +42,13 @@ trait PartitionedLoadBalancer[PartitionedId] {
    * @return the <code>Nodes</code> to broadcast the next message to a replica to
    */
   def nodesForOneReplica(id: PartitionedId): Map[Node, Set[Int]]
-  
+
+  /**
+   * Returns a list of nodes representing all replica for this particular partitionedId
+   * @return the <code>Nodes</code> to multicast the message to
+   */
+  def nodesForPartitionedId(id: PartitionedId): Set[Node]
+
   /**
    * Calculates a mapping of nodes to partitions for broadcasting a partitioned request. Optionally uses a partitioned
    * id for consistent hashing purposes

@@ -76,6 +76,11 @@ public class RingHashPartitionedLoadBalancer implements PartitionedLoadBalancer<
   }
 
   @Override
+  public Set<Node> nodesForPartitionedId(Integer partitionedId) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public Map<Node, Set<Integer>> nodesForOneReplica(Integer partitionedId) {
     throw new UnsupportedOperationException();
   }

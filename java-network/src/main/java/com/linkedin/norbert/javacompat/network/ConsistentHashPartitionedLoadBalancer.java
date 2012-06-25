@@ -105,6 +105,15 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
   }
 
   @Override
+  public Set<Node> nodesForPartitionedId(PartitionedId partitionedId)
+  {
+    if (_fallThrough != null)
+      return _fallThrough.nodesForPartitionedId(partitionedId);
+
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public Map<Node, Set<Integer>> nodesForOneReplica(PartitionedId partitionedId)
   {
     Map<Endpoint, Set<Integer>> replica = lookup(_routingMap, _hashFunction.hash(partitionedId.toString()));
