@@ -99,6 +99,12 @@ class PartitionedConsistentHashedLoadBalancerSpec extends Specification {
 
       replica1.keySet mustNotEq replica2.keySet
     }
+    
+    "nodesForPartitionedId returns the correct node for 1210" in {
+      val nodes = sampleNodes
+      val lb = loadBalancerFactory.newLoadBalancer(toEndpoints(nodes))
+      lb.nodesForPartitionedId(1210) must haveTheSameElementsAs (Set(Node(0, "localhost:31313", true, Set(0, 1)), Node(4, "localhost:31313", true, Set(0, 4))))
+    }
 
     "handle endpoints going down" in {
       val nodes = sampleNodes
@@ -133,8 +139,6 @@ class PartitionedConsistentHashedLoadBalancerSpec extends Specification {
       markUnavailable(endpoints, 0)
       // Mark node 4 down
       markUnavailable(endpoints, 4)
-
-      println(endpoints)
 
       val lbf = new TestLBF(5, false)
       var loadBalancer = lbf.newLoadBalancer(endpoints)

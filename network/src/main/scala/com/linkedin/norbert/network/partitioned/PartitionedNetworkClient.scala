@@ -241,7 +241,13 @@ trait PartitionedNetworkClient[PartitionedId] extends BaseNetworkClient {
   def sendRequestToReplicas[RequestMsg, ResponseMsg](id: PartitionedId, request: RequestMsg, maxRetry : Int = 0)
                                                        (implicit is: InputSerializer[RequestMsg, ResponseMsg], os: OutputSerializer[RequestMsg, ResponseMsg]): ResponseIterator[ResponseMsg] = doIfConnected {
     if (id == null || request == null) throw new NullPointerException
-    val nodes = loadBalancer.getOrElse(throw new ClusterDisconnectedException).fold(ex => throw ex, lb => lb.nodesForPartitionedId(id))
+    val nodes = loadBalancer.getOrElse(throw new ClusterDisconnectedException).fold(ex => throw ex,
+                                                                                    lb =>
+                                                                                    {
+                                                                                      val nodeSet = lb.nodesForPartitionedId(id)
+                                                                                      if (nodeSet.isEmpty) throw new NoNodesAvailableException("Unable to satisfy request, no node available for id %s".format(id))
+                                                                                      nodeSet
+                                                                                    })
     val queue = new ResponseQueue[ResponseMsg]
     val resIter = new NorbertDynamicResponseIterator[ResponseMsg](nodes.size, queue)
     nodes.foreach { case (node) =>

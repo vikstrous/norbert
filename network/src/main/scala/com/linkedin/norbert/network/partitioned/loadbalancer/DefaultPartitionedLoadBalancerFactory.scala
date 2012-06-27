@@ -44,8 +44,8 @@ abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](serveRequest
     }
 
     def nodesForPartitionedId(id: PartitionedId) = {
-      partitionToNodeMap.getOrElse(partitionForId(id), (Vector.empty[Endpoint], new AtomicInteger(0)))._1.toSet.map { (endpoint: Endpoint) => endpoint.node
-      }
+      partitionToNodeMap.getOrElse(partitionForId(id), (Vector.empty[Endpoint], new AtomicInteger(0)))._1.toSet.map
+      { (endpoint: Endpoint) => endpoint.node }
     }
 
     def nodesForOneReplica(id: PartitionedId) = {

@@ -336,6 +336,46 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
       }
     }
 
+
+    "when sendRequestToReplicas(id, message) is called" in {
+      "send the provided message to every replica specified by the load balancer" in {
+        clusterClient.nodes returns nodeSet
+        clusterClient.isConnected returns true
+        networkClient.clusterIoClient.nodesChanged(nodeSet) returns endpoints
+        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.lb
+        List(1,2,3).foreach(networkClient.lb.nodesForPartitionedId(_) returns nodeSet)
+
+        networkClient.start
+        networkClient.sendRequestToReplicas(2, request)
+        got {
+          one(networkClient.lb).nodesForPartitionedId(2)
+        }
+      }
+
+      "throw InvalidClusterException if there is no loadbalancer instance when sendRequestToReplicas is called" in {
+        clusterClient.nodes returns nodeSet
+        clusterClient.isConnected returns true
+        networkClient.clusterIoClient.nodesChanged(nodeSet) returns endpoints
+        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) throws new InvalidClusterException("")
+
+        networkClient.start
+        networkClient.sendRequestToReplicas(3, request) must throwA[InvalidClusterException]
+      }
+
+      "throw NoSuchNodeException if load balancer returns None when sendRequests is called" in {
+        clusterClient.nodes returns nodeSet
+        clusterClient.isConnected returns true
+        networkClient.clusterIoClient.nodesChanged(nodeSet) returns endpoints
+        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.lb
+        networkClient.lb.nodesForPartitionedId(1) returns (Set.empty[Node])
+
+        networkClient.start
+        networkClient.sendRequestToReplicas(1, request) must throwA[NoNodesAvailableException]
+        there was one(networkClient.lb).nodesForPartitionedId(1)
+      }
+      
+    }
+
     "retryCallback should propagate server exception to underlying when" in {
 
       val MAX_RETRY = 3
@@ -396,8 +436,11 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
       "sendMessage: MAX_RETRY reached" in {
         val nc2 = new PartitionedNetworkClient[Int] with ClusterClientComponent with ClusterIoClientComponent with PartitionedLoadBalancerFactoryComponent[Int] {
           val lb = new PartitionedLoadBalancer[Int] {
-            val iter = PartitionedNetworkClientSpec.this.nodes.iterator
-            def nextNode(id: Int) = Some(iter.next)
+            var iter = PartitionedNetworkClientSpec.this.nodes.iterator
+            def nextNode(id: Int) = {
+              if (!iter.hasNext ) iter = PartitionedNetworkClientSpec.this.nodes.iterator
+              Some(iter.next)
+            }
             def nodesForOneReplica(id: Int) = null
             def nodesForPartitionedId(id:Int) = null
             def nodesForPartitions(id: Int, partitions: Set[Int]) = null
@@ -421,7 +464,7 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
         nc2.loadBalancerFactory.newLoadBalancer(endpoints) returns nc2.lb
         nc2.start
         val resIter = nc2.sendRequest(Set(1,2,3), messageCustomizer _, MAX_RETRY)
-        nc2.clusterIoClient.invocationCount mustEqual MAX_RETRY
+        nc2.clusterIoClient.invocationCount mustEqual (MAX_RETRY * 4)
         while (resIter.hasNext) {
           resIter.next must throwAnException
         }

@@ -92,7 +92,7 @@ class PartitionedConsistentHashedLoadBalancer[PartitionedId](numPartitions: Int,
   def nodesForPartitionedId(id: PartitionedId) = {
     val hash = hashFn(id)
     val partitionId = hash.abs % numPartitions
-    wheels.get(partitionId).flatMap { wheel => Option(wheel.foldLeft(Set.empty[Node]) { case (set, (p, e)) => (set + e.node) }) }.get
+    wheels.get(partitionId).flatMap { wheel => Option(wheel.foldLeft(Set.empty[Node]) { case (set, (p, e)) => set + e.node  }) }.get
   }
 
   def nodesForPartitions(id: PartitionedId, partitions: Set[Int]) = {

@@ -32,10 +32,10 @@ class ConsistentHashPartitionedLoadBalancerFactorySpec extends Specification {
     def getNumPartitions(endpoints: Set[Endpoint]) = numPartitions
   }
 
-  def toEndpoints(nodes: Set[Node]) = nodes.map(n => new Endpoint {
+  def toEndpoints(nodes: Set[Node], failingNodes: Set[Node] = Set.empty[Node]) = nodes.map(n => new Endpoint {
       def node = n
 
-      def canServeRequests = true
+      def canServeRequests = !failingNodes.contains(n)
     })
 
   val loadBalancerFactory = new EIdDefaultLoadBalancerFactory(5, true)
@@ -70,6 +70,34 @@ class ConsistentHashPartitionedLoadBalancerFactorySpec extends Specification {
 
       new EIdDefaultLoadBalancerFactory(2, true).newLoadBalancer(toEndpoints(nodes)) must not (throwA[InvalidClusterException])
       new EIdDefaultLoadBalancerFactory(2, false).newLoadBalancer(toEndpoints(nodes)) must throwA[InvalidClusterException]
+    }
+
+    "nodesForPartitionedId returns all the correct nodes for 1210" in {
+      val nodes = Set (
+        Node(0, "localhost:12345", true, Set(0,1,2)),
+        Node(1, "localhost:23451", true, Set(1,2,3)),
+        Node(2, "localhost:34512", true, Set(2,3,4)),
+        Node(3, "localhost:45123", true, Set(3,4,0)),
+        Node(4, "localhost:51234", true, Set(4,0,1))
+      )
+      val lb = loadBalancerFactory.newLoadBalancer(toEndpoints(nodes))
+      lb.nodesForPartitionedId(EId(1210)) must haveTheSameElementsAs (Set(Node(0, "localhost:12345", true, Set(0,1,2)),
+                                                         Node(3, "localhost:45123", true, Set(3,4,0)),
+                                                         Node(4, "localhost:51234", true, Set(4,0,1))))
+    }
+
+    "nodesForPartitionedId returns all nodes regardless if they can serve requests" in {
+      val nodes = Set (
+        Node(0, "localhost:12345", true, Set(0,1,2)),
+        Node(1, "localhost:23451", true, Set(1,2,3)),
+        Node(2, "localhost:34512", true, Set(2,3,4)),
+        Node(3, "localhost:45123", true, Set(3,4,0)),
+        Node(4, "localhost:51234", true, Set(4,0,1))
+      )
+      val lb = loadBalancerFactory.newLoadBalancer(toEndpoints(nodes, Set(nodes.last)))
+      lb.nodesForPartitionedId(EId(1210)) must haveTheSameElementsAs (Set(Node(0, "localhost:12345", true, Set(0,1,2)),
+                                                                          Node(3, "localhost:45123", true, Set(3,4,0)),
+                                                                          Node(4, "localhost:51234", true, Set(4,0,1))))
     }
   }
 }
