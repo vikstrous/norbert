@@ -95,7 +95,7 @@ class NetworkServerSpec extends Specification with Mockito with SampleMessage {
 
         listener.handleClusterEvent(ClusterEvents.Connected(Set()))
 
-        there was one(networkServer.clusterClient).markNodeAvailable(1)
+        there was one(networkServer.clusterClient).markNodeAvailable(1, 0)
       }
 
       "if markAvailable is false, not mark the node available when a Connection message is received" in {
@@ -107,7 +107,7 @@ class NetworkServerSpec extends Specification with Mockito with SampleMessage {
 
         listener.handleClusterEvent(ClusterEvents.Connected(Set()))
 
-        there was no(networkServer.clusterClient).markNodeAvailable(1)
+        there was no(networkServer.clusterClient).markNodeAvailable(1, 0)
       }
     }
 
@@ -128,11 +128,11 @@ class NetworkServerSpec extends Specification with Mockito with SampleMessage {
 
       networkServer.markAvailable
 
-      there was one(networkServer.clusterClient).markNodeAvailable(1)
+      there was one(networkServer.clusterClient).markNodeAvailable(1, 0)
 
       listener.handleClusterEvent(ClusterEvents.Connected(Set()))
 
-      there were two(networkServer.clusterClient).markNodeAvailable(1)
+      there were two(networkServer.clusterClient).markNodeAvailable(1, 0)
     }
 
     "mark the node unavailable and ensure it is not marked available when Connected events are received for markUnavailable" in {
@@ -145,14 +145,14 @@ class NetworkServerSpec extends Specification with Mockito with SampleMessage {
 
       listener.handleClusterEvent(ClusterEvents.Connected(Set()))
 
-      there was one(networkServer.clusterClient).markNodeAvailable(1)
+      there was one(networkServer.clusterClient).markNodeAvailable(1, 0)
 
       networkServer.markUnavailable
 
       listener.handleClusterEvent(ClusterEvents.Connected(Set()))
 
       got {
-        one(networkServer.clusterClient).markNodeAvailable(1)
+        one(networkServer.clusterClient).markNodeAvailable(1, 0)
         one(networkServer.clusterClient).markNodeUnavailable(1)
       }
     }

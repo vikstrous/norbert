@@ -57,8 +57,8 @@ class ConsistentHashPartitionedLoadBalancerFactorySpec extends Specification {
 
     "throw InvalidClusterException if all partitions are unavailable" in {
       val nodes = Set(
-        Node(0, "localhost:31313", true, Set()),
-        Node(1, "localhost:31313", true, Set()))
+        Node(0, "localhost:31313", true, Set[Int]()),
+        Node(1, "localhost:31313", true, Set[Int]()))
 
       new EIdDefaultLoadBalancerFactory(2, false).newLoadBalancer(toEndpoints(nodes)) must throwA[InvalidClusterException]
     }
@@ -66,7 +66,7 @@ class ConsistentHashPartitionedLoadBalancerFactorySpec extends Specification {
     "throw InvalidClusterException if one partition is unavailable, and the LBF cannot serve requests in that state, " in {
       val nodes = Set(
         Node(0, "localhost:31313", true, Set(1)),
-        Node(1, "localhost:31313", true, Set()))
+        Node(1, "localhost:31313", true, Set[Int]()))
 
       new EIdDefaultLoadBalancerFactory(2, true).newLoadBalancer(toEndpoints(nodes)) must not (throwA[InvalidClusterException])
       new EIdDefaultLoadBalancerFactory(2, false).newLoadBalancer(toEndpoints(nodes)) must throwA[InvalidClusterException]
@@ -84,7 +84,7 @@ class ConsistentHashPartitionedLoadBalancerFactorySpec extends Specification {
       lb.nodesForPartitionedId(EId(1210)) must haveTheSameElementsAs (Set(Node(0, "localhost:12345", true, Set(0,1,2)),
                                                          Node(3, "localhost:45123", true, Set(3,4,0)),
                                                          Node(4, "localhost:51234", true, Set(4,0,1))))
-    }
+     }
 
     "nodesForPartitionedId returns all nodes regardless if they can serve requests" in {
       val nodes = Set (
@@ -98,6 +98,6 @@ class ConsistentHashPartitionedLoadBalancerFactorySpec extends Specification {
       lb.nodesForPartitionedId(EId(1210)) must haveTheSameElementsAs (Set(Node(0, "localhost:12345", true, Set(0,1,2)),
                                                                           Node(3, "localhost:45123", true, Set(3,4,0)),
                                                                           Node(4, "localhost:51234", true, Set(4,0,1))))
-    }
+     }
   }
 }
