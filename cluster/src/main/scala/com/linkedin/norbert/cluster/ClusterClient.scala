@@ -199,8 +199,12 @@ trait ClusterClient extends Logging {
   }
 
   /**
-   * Set the capability state for a cluster node
+   * Set the capability state for a cluster node.
+   *
    * @param nodeId the id of the node to represent capablity
+   * @param capability a long with each bit of it representing a different capability of the Node, thus, supporting up
+   * to 64 different capabilities of the Node. This capability then can be used to filter nodes only fulfill a certain
+   * capability level during Node query.
    *
    * @throws ClusterDisconnectedException thrown if the clsuter is disconnected when the method is called
    */
