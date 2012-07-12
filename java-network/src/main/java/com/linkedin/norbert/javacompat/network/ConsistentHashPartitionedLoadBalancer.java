@@ -97,8 +97,14 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
   @Override
   public Node nextNode(PartitionedId partitionedId)
   {
+    return nextNode(partitionedId, 0L);
+  }
+  
+  @Override 
+  public Node nextNode(PartitionedId partitionedId, Long capability)
+  {
     if(_fallThrough != null)
-      return _fallThrough.nextNode(partitionedId);
+      return _fallThrough.nextNode(partitionedId, capability);
 
     // TODO: How do we choose which node to return if we don't want to throw Exception?
     throw new UnsupportedOperationException();
@@ -114,17 +120,32 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
   }
 
   @Override
+  public Set<Node> nodesForPartitionedId(PartitionedId partitionedId, Long capability)
+  {
+    if (_fallThrough != null)
+      return _fallThrough.nodesForPartitionedId(partitionedId, capability);
+
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public Map<Node, Set<Integer>> nodesForOneReplica(PartitionedId partitionedId)
+  {
+    return nodesForOneReplica(partitionedId, 0L);
+  }
+
+  @Override
+  public Map<Node, Set<Integer>> nodesForOneReplica(PartitionedId partitionedId, Long capability)
   {
     Map<Endpoint, Set<Integer>> replica = lookup(_routingMap, _hashFunction.hash(partitionedId.toString()));
     Map<Node, Set<Integer>> results = new HashMap<Node, Set<Integer>>();
 
     Set<Integer> unsatisfiedPartitions = new HashSet<Integer>();
-    
+
     // Attempt to filter out results that are not available
     for(Map.Entry<Endpoint, Set<Integer>> entry : replica.entrySet())
     {
-      if(entry.getKey().canServeRequests())
+      if(entry.getKey().canServeRequests() && entry.getKey().getNode().isCapableOf(capability))
       {
         results.put(entry.getKey().getNode(), entry.getValue());
       }
@@ -133,15 +154,15 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
         unsatisfiedPartitions.addAll(entry.getValue());
       }
     }
-    
+
 
     if(unsatisfiedPartitions.size() > 0)
     {
-      Map<Node, Set<Integer>> resolved = _fallThrough.nodesForPartitions(partitionedId, unsatisfiedPartitions);
-      for(Map.Entry<Node, Set<Integer>> entry : resolved.entrySet()) 
+      Map<Node, Set<Integer>> resolved = _fallThrough.nodesForPartitions(partitionedId, unsatisfiedPartitions, capability);
+      for(Map.Entry<Node, Set<Integer>> entry : resolved.entrySet())
       {
         Set<Integer> partitions = results.get(entry.getKey());
-        if(partitions != null) 
+        if(partitions != null)
         {
           partitions.addAll(entry.getValue());
         }
@@ -157,8 +178,14 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
 
   @Override
   public Map<Node, Set<Integer>> nodesForPartitions(PartitionedId partitionedId, Set<Integer> partitions) {
-    Map<Node, Set<Integer>> entireReplica = nodesForOneReplica(partitionedId);
-    
+    return nodesForPartitions(partitionedId, partitions, 0L);
+  }
+
+
+  @Override
+  public Map<Node, Set<Integer>> nodesForPartitions(PartitionedId partitionedId, Set<Integer> partitions, Long capability) {
+    Map<Node, Set<Integer>> entireReplica = nodesForOneReplica(partitionedId, capability);
+
     Map<Node, Set<Integer>> result = new HashMap<Node, Set<Integer>>();
     for(Map.Entry<Node, Set<Integer>> entry : entireReplica.entrySet())
     {
@@ -169,7 +196,7 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
         if(partitions.contains(localPartition))
           partitionsToUse.add(localPartition);
       }
-      
+
       if(!localPartitions.isEmpty())
       {
         result.put(entry.getKey(), localPartitions);
@@ -177,6 +204,7 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
     }
     return result;
   }
+
 
   private <K, V> V lookup(NavigableMap<K, V> ring, K key)
   {

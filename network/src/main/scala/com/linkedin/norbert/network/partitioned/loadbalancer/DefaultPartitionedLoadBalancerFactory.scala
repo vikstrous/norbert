@@ -31,7 +31,7 @@ abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](serveRequest
     val numPartitions: Int = getNumPartitions(endpoints)
     val partitionToNodeMap = generatePartitionToNodeMap(endpoints, numPartitions, serveRequestsIfPartitionMissing)
 
-    def nextNode(id: PartitionedId) = nodeForPartition(partitionForId(id))
+    def nextNode(id: PartitionedId, capability: Option[Long] = None) = nodeForPartition(partitionForId(id), capability)
     /**
      * Calculates the id of the partition on which the specified <code>Id</code> resides.
      *
@@ -43,22 +43,22 @@ abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](serveRequest
       calculateHash(id).abs % numPartitions
     }
 
-    def nodesForPartitionedId(id: PartitionedId) = {
-      partitionToNodeMap.getOrElse(partitionForId(id), (Vector.empty[Endpoint], new AtomicInteger(0)))._1.toSet.map
+    def nodesForPartitionedId(id: PartitionedId, capability: Option[Long] = None) = {
+      partitionToNodeMap.getOrElse(partitionForId(id), (Vector.empty[Endpoint], new AtomicInteger(0)))._1.filter(_.node.isCapableOf(capability)).toSet.map
       { (endpoint: Endpoint) => endpoint.node }
     }
 
-    def nodesForOneReplica(id: PartitionedId) = {
-      nodesForPartitions(id, partitionToNodeMap)
+    def nodesForOneReplica(id: PartitionedId, capability: Option[Long] = None) = {
+      nodesForPartitions(id, partitionToNodeMap, capability)
     }
 
-    def nodesForPartitions(id: PartitionedId, partitions: Set[Int]) = {
-      nodesForPartitions(id, partitionToNodeMap.filterKeys(partitions contains _))
+    def nodesForPartitions(id: PartitionedId, partitions: Set[Int], capability: Option[Long] = None) = {
+      nodesForPartitions(id, partitionToNodeMap.filterKeys(partitions contains _), capability)
     }
 
-    def nodesForPartitions(id: PartitionedId, partitionToNodeMap: Map[Int, (IndexedSeq[Endpoint], AtomicInteger)]) = {
+    def nodesForPartitions(id: PartitionedId, partitionToNodeMap: Map[Int, (IndexedSeq[Endpoint], AtomicInteger)], capability: Option[Long]) = {
       partitionToNodeMap.keys.foldLeft(Map.empty[Node, Set[Int]]) { (map, partition) =>
-        val nodeOption = nodeForPartition(partition)
+        val nodeOption = nodeForPartition(partition, capability)
         if(nodeOption.isDefined) {
           val n = nodeOption.get
           map + (n -> (map.getOrElse(n, Set.empty[Int]) + partition))

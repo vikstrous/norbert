@@ -14,12 +14,18 @@ class JavaLbfToScalaLbf[PartitionedId](javaLbf: PartitionedLoadBalancerFactory[P
   def newLoadBalancer(nodes: Set[SEndpoint]) = {
     val lb = javaLbf.newLoadBalancer(nodes)
     new SPartitionedLoadBalancer[PartitionedId] {
-      def nextNode(id: PartitionedId) = {
-        Option(lb.nextNode(id))
+      def nextNode(id: PartitionedId, capability: Option[Long] = None) = {
+        capability match {
+          case Some(c) => Option(lb.nextNode(id, c.longValue))
+          case None => Option(lb.nextNode(id))
+        }
       }
 
-      def nodesForOneReplica(id: PartitionedId) = {
-        val jMap = lb.nodesForOneReplica(id)
+      def nodesForOneReplica(id: PartitionedId, capability: Option[Long]  = None) = {
+        val jMap = capability match {
+          case Some(c) => lb.nodesForOneReplica(id, c.longValue)
+          case None => lb.nodesForOneReplica(id)
+        }
         var sMap = Map.empty[com.linkedin.norbert.cluster.Node, Set[Int]]
 
         val entries = jMap.entrySet.iterator
@@ -33,8 +39,11 @@ class JavaLbfToScalaLbf[PartitionedId](javaLbf: PartitionedLoadBalancerFactory[P
         sMap
       }
 
-      def nodesForPartitionedId(id: PartitionedId) = {
-        val jSet = lb.nodesForPartitionedId(id)
+      def nodesForPartitionedId(id: PartitionedId, capability: Option[Long] = None) = {
+        val jSet = capability match {
+          case Some(c) => lb.nodesForPartitionedId(id, c.longValue)
+          case None => lb.nodesForPartitionedId(id)
+        }
         var sSet = Set.empty[SNode]
         val entries = jSet.iterator
         while(entries.hasNext) {
@@ -44,8 +53,11 @@ class JavaLbfToScalaLbf[PartitionedId](javaLbf: PartitionedLoadBalancerFactory[P
         sSet
       }
 
-      def nodesForPartitions(id: PartitionedId, partitions: Set[Int]) = {
-        val jMap = lb.nodesForOneReplica(id)
+      def nodesForPartitions(id: PartitionedId, partitions: Set[Int], capability: Option[Long] = None) = {
+        val jMap =  capability match {
+          case Some(c) => lb.nodesForOneReplica(id, c.longValue)
+          case None => lb.nodesForOneReplica(id)
+        }
         var sMap = Map.empty[com.linkedin.norbert.cluster.Node, Set[Int]]
 
         val entries = jMap.entrySet.iterator

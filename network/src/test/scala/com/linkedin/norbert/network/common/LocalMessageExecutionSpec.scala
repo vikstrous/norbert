@@ -71,7 +71,7 @@ class LocalMessageExecutionSpec extends Specification with Mockito with SampleMe
 
   "LocalMessageExecution" should {
     "call the MessageExecutor if myNode is equal to the node the request is to be sent to" in {
-      networkClient.lb.nextNode returns Some(networkClient.myNode)
+      networkClient.lb.nextNode(None) returns Some(networkClient.myNode)
 
       networkClient.start
 
@@ -82,7 +82,7 @@ class LocalMessageExecutionSpec extends Specification with Mockito with SampleMe
     }
 
     "not call the MessageExecutor if myNode is not equal to the node the request is to be sent to" in {
-      networkClient.lb.nextNode returns Some(Node(2, "", true))
+      networkClient.lb.nextNode(None) returns Some(Node(2, "", true))
 
       networkClient.start
       networkClient.sendRequest(request) must notBeNull
