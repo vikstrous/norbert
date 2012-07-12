@@ -83,5 +83,5 @@ final case class Node(id: Int, url: String, available: Boolean, partitionIds: Se
     case _ => false
   }
 
-  override def toString = "Node(%d,%s,[%s],%b,%d)".format(id, url, partitionIds.mkString(","), available, if (capability.isEmpty) -1L else capability.get)
+  override def toString = "Node(%d,%s,[%s],%b,0x%08X)".format(id, url, partitionIds.mkString(","), available, if (capability.isEmpty) 0L else capability.get)
 }
