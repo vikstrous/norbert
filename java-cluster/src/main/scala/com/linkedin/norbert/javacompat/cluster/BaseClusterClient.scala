@@ -51,6 +51,8 @@ abstract class BaseClusterClient extends ClusterClient {
   def markNodeUnavailable(nodeId: Int) = underlying.markNodeUnavailable(nodeId)
 
   def markNodeAvailable(nodeId: Int) = underlying.markNodeAvailable(nodeId)
+  
+  def markNodeAvailable(nodeId: Int, capacity: Long) = underlying.markNodeAvailable(nodeId, capacity)
 
   def removeNode(nodeId: Int) = underlying.removeNode(nodeId)
 

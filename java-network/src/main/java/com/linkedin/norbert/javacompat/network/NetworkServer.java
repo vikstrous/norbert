@@ -59,6 +59,22 @@ public interface NetworkServer {
   void bind(int nodeId, boolean markAvailable) throws InvalidNodeException, NetworkingException;
 
   /**
+   * Binds the network server instance to the wildcard address and the port of the <code>Node</code> identified
+   * by the provided nodeId and marks the <code>Node</code> available in the cluster if <code>markAvailable</code> is true.  A
+   * <code>Node</code>'s url must be specified in the format hostname:port.
+   *
+   * @param nodeId the id of the <code>Node</code> this server is associated with.
+   * @param markAvailable if true marks the <code>Node</code> identified by <code>nodeId</code> as available after binding to
+   * the port
+   * @param initialCapacity the initial capability value associated with the node
+   *
+   * @throws InvalidNodeException thrown if no <code>Node</code> with the specified <code>nodeId</code> exists or if the
+   * format of the <code>Node</code>'s url isn't hostname:port
+   * @throws NetworkingException thrown if unable to bind
+   */
+  void bind(int nodeId, boolean markAvailable, long initialCapability) throws InvalidNodeException, NetworkingException;
+
+  /**
    * Returns the <code>Node</code> associated with this server.
    *
    * @return the <code>Node</code> associated with this server
@@ -69,6 +85,12 @@ public interface NetworkServer {
    * Marks the node available in the cluster if the server is bound.
    */
   void markAvailable();
+
+  /**
+   * Marks the node available in the cluster with the specific initial capacity value
+   * @param initialCapability
+   */
+  void markAvailable(long initialCapability);
 
   /**
    * Marks the node unavailable in the cluster if bound.

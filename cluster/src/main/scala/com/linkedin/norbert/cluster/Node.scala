@@ -34,14 +34,14 @@ object Node {
    *
    * @return a new <code>Node</code> instance
    */
-  def apply(id: Int, bytes: Array[Byte], available: Boolean): Node = {
+  def apply(id: Int, bytes: Array[Byte], available: Boolean, capability : Option[Long]): Node = {
     import collection.JavaConversions._
 
     try {
       val node = NorbertProtos.Node.newBuilder.mergeFrom(bytes).build
       val partitions = node.getPartitionList.asInstanceOf[java.util.List[Int]].foldLeft(Set[Int]()) { (set, i) => set + i }
 
-      Node(node.getId, node.getUrl, available, partitions)
+      Node(node.getId, node.getUrl, available, partitions, capability)
     } catch {
       case ex: InvalidProtocolBufferException => throw new InvalidNodeException("Error deserializing node", ex)
     }
@@ -70,8 +70,9 @@ object Node {
  * @param address the url to which requests can be sent to the node
  * @param available whether or not the node is currently able to process requests
  * @param partitions the partitions for which the node can handle requests
+ * @param capability the 64 bits Long representing up to 64 node capabilities
  */
-final case class Node(id: Int, url: String, available: Boolean, partitionIds: Set[Int] = Set.empty) {
+final case class Node(id: Int, url: String, available: Boolean, partitionIds: Set[Int] = Set.empty, capability: Option[Long] = None) {
   if (url == null) throw new NullPointerException("url must not be null")
   if (partitionIds == null) throw new NullPointerException("partitions must not be null")
 
@@ -82,5 +83,5 @@ final case class Node(id: Int, url: String, available: Boolean, partitionIds: Se
     case _ => false
   }
 
-  override def toString = "Node(%d,%s,[%s],%b)".format(id, url, partitionIds.mkString(","), available)
+  override def toString = "Node(%d,%s,[%s],%b,0x%08X)".format(id, url, partitionIds.mkString(","), available, if (capability.isEmpty) 0L else capability.get)
 }

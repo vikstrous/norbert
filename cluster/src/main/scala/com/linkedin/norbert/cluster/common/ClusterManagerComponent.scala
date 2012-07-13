@@ -26,8 +26,9 @@ trait ClusterManagerComponent {
   object ClusterManagerMessages {
     case class AddNode(node: Node) extends ClusterManagerMessage
     case class RemoveNode(nodeId: Int) extends ClusterManagerMessage
-    case class MarkNodeAvailable(nodeId: Int) extends ClusterManagerMessage
+    case class MarkNodeAvailable(nodeId: Int, initialCapability: Long = 0L) extends ClusterManagerMessage
     case class MarkNodeUnavailable(nodeId: Int) extends ClusterManagerMessage
+    case class SetNodeCapability(nodeId: Int,  capability: Long) extends ClusterManagerMessage
 
     case object Shutdown extends ClusterManagerMessage
 

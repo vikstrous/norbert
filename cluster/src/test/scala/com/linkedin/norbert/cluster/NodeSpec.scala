@@ -28,8 +28,8 @@ class NodeSpec extends Specification {
       builder.addPartition(0).addPartition(1)
       val expectedBytes = builder.build.toByteArray.toList
 
-      val nodeBytes = Node.nodeToByteArray(Node(1, "localhost:31313", false, Set(0, 1))).toList
-      nodeBytes must be_==(expectedBytes)
+      val nodeBytes = Node.nodeToByteArray(Node(1, "localhost:31313", false, Set(0, 1)))
+      nodeBytes.toList must be_==(expectedBytes)
     }
 
     "deserialize into the corrent Node" in {
@@ -40,7 +40,7 @@ class NodeSpec extends Specification {
       val bytes = builder.build.toByteArray
 
       val node = Node(1, "localhost:31313", true, Set(0, 1))
-      Node(1, bytes, true) must be_==(node)
+      Node(1, bytes, true, Some(0L)) must be_==(node)
     }
 
     "have a sane equals method" in {

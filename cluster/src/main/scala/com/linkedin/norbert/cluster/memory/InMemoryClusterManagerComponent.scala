@@ -54,16 +54,21 @@ trait InMemoryClusterManagerComponent extends ClusterManagerComponent with Clust
             clusterNotificationManager ! ClusterNotificationMessages.NodesChanged(currentNodes)
             reply(ClusterManagerResponse(None))
 
-          case MarkNodeAvailable(nodeId) =>
-            currentNodes.get(nodeId).foreach { node => currentNodes.update(nodeId, node.copy(available = true)) }
+          case MarkNodeAvailable(nodeId, initialCapability) =>
+            currentNodes.get(nodeId).foreach { node => currentNodes.update(nodeId, node.copy(available = true, capability =  Some(initialCapability))) }
             available += nodeId
             clusterNotificationManager ! ClusterNotificationMessages.NodesChanged(currentNodes)
             reply(ClusterManagerResponse(None))
 
           case MarkNodeUnavailable(nodeId) =>
-            currentNodes.get(nodeId).foreach { node => currentNodes.update(nodeId, node.copy(available = false)) }
+            currentNodes.get(nodeId).foreach { node => currentNodes.update(nodeId, node.copy(available = false, capability = None)) }
             available -= nodeId
             clusterNotificationManager ! ClusterNotificationMessages.NodesChanged(currentNodes)
+            reply(ClusterManagerResponse(None))
+
+          case SetNodeCapability(nodeId, capability) =>
+            currentNodes.get(nodeId).foreach { node => currentNodes.update(nodeId, node.copy(capability = Some(capability)))}
+            clusterManager ! ClusterNotificationMessages.NodesChanged(currentNodes)
             reply(ClusterManagerResponse(None))
 
           case Shutdown => exit

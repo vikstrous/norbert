@@ -73,8 +73,8 @@ class PartitionedConsistentHashedLoadBalancerSpec extends Specification {
 
     "throw InvalidClusterException if all partitions are unavailable" in {
       val nodes = Set(
-        Node(0, "localhost:31313", true, Set()),
-        Node(1, "localhost:31313", true, Set()))
+        Node(0, "localhost:31313", true, Set[Int]()),
+        Node(1, "localhost:31313", true, Set[Int]()))
 
       new TestLBF(2, false).newLoadBalancer(toEndpoints(nodes)) must throwA[InvalidClusterException]
     }
@@ -82,7 +82,7 @@ class PartitionedConsistentHashedLoadBalancerSpec extends Specification {
     "throw InvalidClusterException if one partition is unavailable, and the LBF cannot serve requests in that state, " in {
       val nodes = Set(
         Node(0, "localhost:31313", true, Set(1)),
-        Node(1, "localhost:31313", true, Set()))
+        Node(1, "localhost:31313", true, Set[Int]()))
 
       new TestLBF(2, true).newLoadBalancer(toEndpoints(nodes)) must not (throwA[InvalidClusterException])
       new TestLBF(2, false).newLoadBalancer(toEndpoints(nodes)) must throwA[InvalidClusterException]

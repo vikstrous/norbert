@@ -38,9 +38,13 @@ class NettyNetworkServer(config: NetworkServerConfig) extends NetworkServer {
 
   def markUnavailable = underlying.markUnavailable
 
+  def markAvailable(initialCapability: Long) = underlying.markAvailable(initialCapability)
+
   def markAvailable = underlying.markAvailable
 
   def getMyNode = underlying.myNode
+
+  def bind(nodeId: Int, markAvailable: Boolean, initialCapacity: Long) = underlying.bind(nodeId, markAvailable, initialCapacity)
 
   def bind(nodeId: Int, markAvailable: Boolean) = underlying.bind(nodeId, markAvailable)
 
