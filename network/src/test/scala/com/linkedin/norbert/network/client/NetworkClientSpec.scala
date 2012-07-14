@@ -75,6 +75,20 @@ class NetworkClientSpec extends BaseNetworkClientSpecification {
 //      clusterIoClient.sendMessage(node, message, null) was called
     }
 
+    "send the provided message to the node specified by the load balancer for sendMessage with the requested capability " in {
+      clusterClient.nodes returns nodeSet
+      clusterClient.isConnected returns true
+      networkClient.clusterIoClient.nodesChanged(nodeSet) returns endpoints
+      networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.lb
+      networkClient.lb.nextNode(Some(0x1)) returns Some(nodes(1))
+
+      networkClient.start
+      networkClient.sendRequest(request, Some(1L)) must notBeNull
+
+      there was one(networkClient.lb).nextNode(Some(0x1))
+      there was no(networkClient.lb).nextNode(None)
+    }
+
     "retryCallback should propagate server exception to underlying when" in {
 
       val MAX_RETRY = 3

@@ -54,6 +54,26 @@ class ConsistentHashPartitionedLoadBalancerFactorySpec extends Specification {
         Node(4, "localhost:31313", true, Set(0, 4))) must contain(_))
     }
 
+    "nextNode with capability return the correct node for 1210" in {
+      val nodes = Set(
+        Node(0, "localhost:31313", true, Set(0, 1)),
+        Node(1, "localhost:31313", true, Set(1, 2)),
+        Node(2, "localhost:31313", true, Set(2, 3)),
+        Node(3, "localhost:31313", true, Set(3, 4)),
+        Node(4, "localhost:31313", true, Set(0, 4), Some(0x2)),
+        Node(5, "localhost:31313", true, Set(3, 0), Some(0x3)))
+
+      val lb = loadBalancerFactory.newLoadBalancer(toEndpoints(nodes))
+      lb.nextNode(EId(1210)) must beSome[Node].which(List(Node(0, "localhost:31313", true, Set(0, 1)),
+                                                          Node(4, "localhost:31313", true, Set(0, 4), Some(0x2)),
+                                                          Node(5, "localhost:31313", true, Set(3, 0), Some(0x3))) must contain(_))
+      lb.nextNode(EId(1210), Some(0x1)) must be_==(Some(Node(5, "localhost:31313", true, Set(3,0), Some(0x3))))
+      lb.nextNode(EId(1210), Some(0x2)) must beSome[Node].which(List(Node(4, "localhost:31313", true, Set(0, 4), Some(0x2)),
+                                                                     Node(5, "localhost:31313", true, Set(3, 0), Some(0x3))) must contain(_))
+      //HIGH TODO: overflow @DefaultLoadBalancerHelper.nodeForPartition
+      //lb.nextNode(EId(1210), Some(0x4)) must be_==(None)
+    }
+
 
     "throw InvalidClusterException if all partitions are unavailable" in {
       val nodes = Set(
@@ -99,5 +119,39 @@ class ConsistentHashPartitionedLoadBalancerFactorySpec extends Specification {
                                                                           Node(3, "localhost:45123", true, Set(3,4,0)),
                                                                           Node(4, "localhost:51234", true, Set(4,0,1))))
      }
+
+    "nodesForPartitionedId returns only nodes satisfying capabiity requirements" in {
+      val nodes = Set (
+        Node(0, "localhost:12345", true, Set(0,1,2), Some(0x1)),
+        Node(1, "localhost:23451", true, Set(1,2,3)),
+        Node(2, "localhost:34512", true, Set(2,3,4)),
+        Node(3, "localhost:45123", true, Set(3,4,0)),
+        Node(4, "localhost:51234", true, Set(4,0,1), Some(0x2))
+      )
+      val lb = loadBalancerFactory.newLoadBalancer(toEndpoints(nodes))
+      lb.nodesForPartitionedId(EId(1210)) must haveTheSameElementsAs (Set(Node(0, "localhost:12345", true, Set(0,1,2)),
+                                                                          Node(3, "localhost:45123", true, Set(3,4,0)),
+                                                                          Node(4, "localhost:51234", true, Set(4,0,1))))
+
+      lb.nodesForPartitionedId(EId(1210), Some(0x1)) must haveTheSameElementsAs (Set(Node(0, "localhost:12345", true, Set(0,1,2), Some(0x1))))
+      lb.nodesForPartitionedId(EId(1210), Some(0x2)) must haveTheSameElementsAs (Set(Node(4, "localhost:51234", true, Set(4,0,1), Some(0x2))))
+      lb.nodesForPartitionedId(EId(1210), Some(0x3)) must haveTheSameElementsAs (Set())
+    }
+    
+    "nodesForOneReplica returns only nodes satisfying capability requirements" in {
+      val nodes = Set (
+        Node(0, "localhost:12345", true, Set(0,1,2), Some(0x1)),
+        Node(1, "localhost:23451", true, Set(1,2,3)),
+        Node(2, "localhost:34512", true, Set(2,3,4), Some(0x2)),
+        Node(3, "localhost:45123", true, Set(3,4,0), Some(0x3)),
+        Node(4, "localhost:51234", true, Set(4,0,1), Some(0x6))
+      )
+      val lb = loadBalancerFactory.newLoadBalancer(toEndpoints(nodes))
+      lb.nodesForOneReplica(EId(1210), Some(0x1)) must haveTheSameElementsAs (Map(Node(0, "localhost:12345", true, Set(0,1,2), Some(0x1)) -> Set(0,1,2),
+                                                                          Node(3, "localhost:45123", true, Set(3,4,0), Some(0x3)) -> Set(3,4)))
+      lb.nodesForOneReplica(EId(1210), Some(0x2)) must haveTheSameElementsAs (Map(Node(2, "localhost:34512", true, Set(2,3,4), Some(0x2)) -> Set(2,3),
+                                                                          Node(4, "localhost:51234", true, Set(4,0,1), Some(0x6)) -> Set(0,1),
+                                                                          Node(3, "localhost:45123", true, Set(3,4,0), Some(0x3)) -> Set(4)))
+    }
   }
 }
