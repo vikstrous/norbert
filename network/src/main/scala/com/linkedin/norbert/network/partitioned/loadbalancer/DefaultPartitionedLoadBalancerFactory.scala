@@ -20,7 +20,7 @@ package loadbalancer
 
 import cluster.{Node, InvalidClusterException}
 import common.Endpoint
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
 
 /**
  * This class is intended for applications where there is a mapping from partitions -> servers able to respond to those requests. Requests are round-robined
@@ -44,7 +44,7 @@ abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](serveRequest
     }
 
     def nodesForPartitionedId(id: PartitionedId, capability: Option[Long] = None) = {
-      partitionToNodeMap.getOrElse(partitionForId(id), (Vector.empty[Endpoint], new AtomicInteger(0)))._1.filter(_.node.isCapableOf(capability)).toSet.map
+      partitionToNodeMap.getOrElse(partitionForId(id), (Vector.empty[Endpoint], new AtomicInteger(0), new Array[AtomicBoolean](0)))._1.filter(_.node.isCapableOf(capability)).toSet.map
       { (endpoint: Endpoint) => endpoint.node }
     }
 
@@ -56,7 +56,7 @@ abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](serveRequest
       nodesForPartitions(id, partitionToNodeMap.filterKeys(partitions contains _), capability)
     }
 
-    def nodesForPartitions(id: PartitionedId, partitionToNodeMap: Map[Int, (IndexedSeq[Endpoint], AtomicInteger)], capability: Option[Long]) = {
+    def nodesForPartitions(id: PartitionedId, partitionToNodeMap: Map[Int, (IndexedSeq[Endpoint], AtomicInteger, Array[AtomicBoolean])], capability: Option[Long]) = {
       partitionToNodeMap.keys.foldLeft(Map.empty[Node, Set[Int]]) { (map, partition) =>
         val nodeOption = nodeForPartition(partition, capability)
         if(nodeOption.isDefined) {

@@ -20,7 +20,7 @@ package loadbalancer
 
 import cluster.{InvalidClusterException, Node}
 import common.Endpoint
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
 import annotation.tailrec
 import client.loadbalancer.LoadBalancerHelpers
 import logging.Logging
@@ -32,7 +32,7 @@ trait DefaultLoadBalancerHelper extends LoadBalancerHelpers with Logging {
   /**
    * A mapping from partition id to the <code>Node</code>s which can service that partition.
    */
-  protected val partitionToNodeMap: Map[Int, (IndexedSeq[Endpoint], AtomicInteger)]
+  protected val partitionToNodeMap: Map[Int, (IndexedSeq[Endpoint], AtomicInteger, Array[AtomicBoolean])]
 
   /**
    * Given the currently available <code>Node</code>s and the total number of partitions in the cluster, this method
@@ -45,7 +45,7 @@ trait DefaultLoadBalancerHelper extends LoadBalancerHelpers with Logging {
    * @throws InvalidClusterException thrown if every partition doesn't have at least one available <code>Node</code>
    * assigned to it
    */
-  protected def generatePartitionToNodeMap(nodes: Set[Endpoint], numPartitions: Int, serveRequestsIfPartitionMissing: Boolean): Map[Int, (IndexedSeq[Endpoint], AtomicInteger)] = {
+  protected def generatePartitionToNodeMap(nodes: Set[Endpoint], numPartitions: Int, serveRequestsIfPartitionMissing: Boolean): Map[Int, (IndexedSeq[Endpoint], AtomicInteger, Array[AtomicBoolean])] = {
     val partitionToNodeMap = (for (n <- nodes; p <- n.node.partitionIds) yield(p, n)).foldLeft(Map.empty[Int, IndexedSeq[Endpoint]]) {
       case (map, (partitionId, node)) => map + (partitionId -> (node +: map.get(partitionId).getOrElse(Vector.empty[Endpoint])))
     }
@@ -62,7 +62,12 @@ trait DefaultLoadBalancerHelper extends LoadBalancerHelpers with Logging {
         throw new InvalidClusterException("Partitions %s are unavailable, cannot serve requests.".format(missingPartitions))
     }
 
-    partitionToNodeMap.map { case (pId, endPoints) => pId -> (endPoints, new AtomicInteger(0)) }
+
+    partitionToNodeMap.map { case (pId, endPoints) =>
+      val states = new Array[AtomicBoolean](endPoints.size)
+      (0 to endPoints.size -1).foreach(states(_) = new AtomicBoolean(true))
+      pId -> (endPoints, new AtomicInteger(0), states) 
+    }
   }
 
   /**
@@ -77,15 +82,22 @@ trait DefaultLoadBalancerHelper extends LoadBalancerHelpers with Logging {
     partitionToNodeMap.get(partitionId) match {
       case None =>
         return None
-      case Some((endpoints, counter)) =>
+      case Some((endpoints, counter, states)) =>
+        import math._
+        val es = endpoints.size
+        counter.compareAndSet(java.lang.Integer.MAX_VALUE, 0)
         val idx = counter.getAndIncrement
         var i = idx
         do {
-          val endpoint = endpoints(i % endpoints.size)
+          val endpoint = endpoints(i % es)
           if(endpoint.canServeRequests && endpoint.node.isCapableOf(capability))
-            return Some(endpoint.node)
+            if (states(i % es).compareAndSet(true, false))
+              return Some(endpoint.node)
+            else if ((i - idx) >= es)
+              states(i % es).compareAndSet(false, true)
 
           i = i + 1
+          if (i < 0) i = 0
         } while(i != idx)
 
         return Some(endpoints(idx).node)
