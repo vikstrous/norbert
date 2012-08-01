@@ -73,6 +73,7 @@ class NettyNetworkServer(serverConfig: NetworkServerConfig) extends NetworkServe
   bootstrap.setOption("child.tcpNoDelay", true)
   bootstrap.setOption("child.reuseAddress", true)
 
+  val serverFilterChannelHandler = new ServerFilterChannelHandler(messageExecutor)
   val serverChannelHandler = new ServerChannelHandler(
     serviceName = clusterClient.serviceName,
     channelGroup = channelGroup,
@@ -92,8 +93,7 @@ class NettyNetworkServer(serverConfig: NetworkServerConfig) extends NetworkServe
     def getPipeline = {
       val p = Channels.pipeline
 
-      p.addFirst("logging", loggingHandler)
-
+      if (log.debugEnabled) p.addFirst("logging", loggingHandler)
       p.addLast("frameDecoder", new LengthFieldBasedFrameDecoder(Int.MaxValue, 0, 4, 0, 4))
       p.addLast("protobufDecoder", protobufDecoder)
 
@@ -102,6 +102,7 @@ class NettyNetworkServer(serverConfig: NetworkServerConfig) extends NetworkServe
 
       p.addLast("requestContextDecoder", requestContextDecoder)
       p.addLast("requestContextEncoder", requestContextEncoder)
+      p.addLast("requestFilterHandler", serverFilterChannelHandler)
       p.addLast("requestHandler", handler)
 
       p

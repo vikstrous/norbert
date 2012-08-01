@@ -18,7 +18,7 @@ package com.linkedin.norbert.network
 import com.linkedin.norbert.protos.NorbertExampleProtos
 
 object Ping {
-  implicit case object PingSerializer extends Serializer[Ping, Ping] {
+  implicit case object PingSerializer extends Serializer[Ping,  Pong] {
     def requestName = "ping"
     def responseName = "pong"
 
@@ -29,12 +29,13 @@ object Ping {
       Ping(NorbertExampleProtos.Ping.newBuilder.mergeFrom(bytes).build.getTimestamp)
     }
 
-    def responseToBytes(message: Ping) =
-      requestToBytes(message)
+    def responseToBytes(message: Pong) =
+      NorbertExampleProtos.PingResponse.newBuilder.setTimestamp(message.timestamp).build.toByteArray
 
     def responseFromBytes(bytes: Array[Byte]) =
-      requestFromBytes(bytes)
+      Pong(NorbertExampleProtos.PingResponse.newBuilder.mergeFrom(bytes).build.getTimestamp)
   }
 }
 
 case class Ping(timestamp: Long)
+case class Pong(timestamp: Long)

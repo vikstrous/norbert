@@ -21,9 +21,10 @@ import org.specs.Specification
 import org.specs.mock.Mockito
 import client.NetworkClient
 import client.loadbalancer.{LoadBalancerFactory, LoadBalancer, LoadBalancerFactoryComponent}
-import server.{MessageExecutorComponent, MessageExecutor}
+import server.{MessageExecutorComponent, MessageExecutor, Filter, RequestContext}
 import cluster.{Node, ClusterClientComponent, ClusterClient}
 import com.google.protobuf.Message
+import scala.collection.mutable.MutableList
 
 class LocalMessageExecutionSpec extends Specification with Mockito with SampleMessage {
   val clusterClient = mock[ClusterClient]
@@ -31,10 +32,10 @@ class LocalMessageExecutionSpec extends Specification with Mockito with SampleMe
   val messageExecutor = new MessageExecutor {
     var called = false
     var request: Any = _
-
+    val filters = new MutableList[Filter]
     def shutdown = {}
 
-    def executeMessage[RequestMsg, ResponseMsg](request: RequestMsg, responseHandler: (Either[Exception, ResponseMsg]) => Unit)(implicit is: InputSerializer[RequestMsg, ResponseMsg]) = {
+    def executeMessage[RequestMsg, ResponseMsg](request: RequestMsg, responseHandler: (Either[Exception, ResponseMsg]) => Unit, context: Option[RequestContext])(implicit is: InputSerializer[RequestMsg, ResponseMsg]) = {
       called = true
       this.request = request
 

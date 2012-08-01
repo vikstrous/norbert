@@ -19,7 +19,7 @@ package netty
 
 import org.jboss.netty.channel.group.ChannelGroup
 import org.jboss.netty.channel._
-import server.{MessageExecutor, MessageHandlerRegistry}
+import server.{MessageExecutor, MessageHandlerRegistry, RequestContext => NorbertRequestContext}
 import protos.NorbertProtos
 import logging.Logging
 import java.util.UUID
@@ -32,7 +32,8 @@ import norbertutils._
 import common.CachedNetworkStatistics
 import util.ProtoUtils
 
-case class RequestContext(requestId: UUID, receivedAt: Long = System.currentTimeMillis)
+
+case class RequestContext(requestId: UUID, receivedAt: Long = System.currentTimeMillis) extends NorbertRequestContext
 
 @ChannelPipelineCoverage("all")
 class RequestContextDecoder extends OneToOneDecoder {
@@ -56,6 +57,25 @@ class RequestContextEncoder extends OneToOneEncoder with Logging {
     val (context, norbertMessage) = msg.asInstanceOf[(RequestContext, NorbertProtos.NorbertMessage)]
 
     norbertMessage
+  }
+}
+
+@ChannelPipelineCoverage("all")
+class ServerFilterChannelHandler(messageExecutor: MessageExecutor) extends SimpleChannelHandler with Logging {
+  override def handleUpstream(ctx: ChannelHandlerContext, e: ChannelEvent) {
+    if (e.isInstanceOf[MessageEvent]) {
+      val (context, norbertMessage) = e.asInstanceOf[MessageEvent].getMessage.asInstanceOf[(RequestContext, NorbertProtos.NorbertMessage)]
+      messageExecutor.filters.foreach { filter => filter.asInstanceOf[Filter].onMessage(norbertMessage, context) }
+    }
+    super.handleUpstream(ctx, e)
+  }
+
+  override def handleDownstream(ctx: ChannelHandlerContext, e: ChannelEvent) {
+    if (e.isInstanceOf[MessageEvent]) {
+      val (context, norbertMessage) = e.asInstanceOf[MessageEvent].getMessage.asInstanceOf[(RequestContext, NorbertProtos.NorbertMessage)]
+      messageExecutor.filters.foreach { filter => filter.asInstanceOf[Filter].postMessage(norbertMessage, context) }
+    }
+    super.handleDownstream(ctx, e)
   }
 }
 
@@ -108,7 +128,7 @@ class ServerChannelHandler(serviceName: String,
     try {
       messageExecutor.executeMessage(request, (either: Either[Exception, Any]) => {
         responseHandler(context, e.getChannel, either)(is, os)
-      })(is)
+      }, Some(context))(is)
     }
     catch {
       case ex: HeavyLoadException =>
