@@ -26,7 +26,7 @@ class ConsistentHashPartitionedLoadBalancerFactorySpec extends Specification {
   case class EId(id: Int)
   implicit def eId2ByteArray(eId: EId): Array[Byte] = BigInt(eId.id).toByteArray
 
-  class EIdDefaultLoadBalancerFactory(numPartitions: Int, serveRequestsIfPartitionMissing: Boolean) extends DefaultPartitionedLoadBalancerFactory[EId](serveRequestsIfPartitionMissing) {
+  class EIdDefaultLoadBalancerFactory(numPartitions: Int, serveRequestsIfPartitionMissing: Boolean) extends DefaultPartitionedLoadBalancerFactory[EId](numPartitions, serveRequestsIfPartitionMissing) {
     protected def calculateHash(id: EId) = HashFunctions.fnv(id)
 
     def getNumPartitions(endpoints: Set[Endpoint]) = numPartitions

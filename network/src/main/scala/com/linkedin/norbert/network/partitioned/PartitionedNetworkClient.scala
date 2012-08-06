@@ -262,7 +262,7 @@ trait PartitionedNetworkClient[PartitionedId] extends BaseNetworkClient {
                                                       (implicit is: InputSerializer[RequestMsg, ResponseMsg],
                                                        os: OutputSerializer[RequestMsg, ResponseMsg]): ResponseIterator[ResponseMsg]  = doIfConnected {
     val nodes = loadBalancer.getOrElse(throw new ClusterDisconnectedException).fold(ex => throw ex,
-      lb => lb.nodesForOneReplica(id))
+      lb => lb.nodesForOneReplica(id, capability))
 
     if (nodes.isEmpty) throw new NoNodesAvailableException("Unable to satisfy request, no node available for request")
 

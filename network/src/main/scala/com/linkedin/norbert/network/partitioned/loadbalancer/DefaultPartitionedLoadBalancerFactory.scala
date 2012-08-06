@@ -26,22 +26,12 @@ import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
  * This class is intended for applications where there is a mapping from partitions -> servers able to respond to those requests. Requests are round-robined
  * between the partitions
  */
-abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](serveRequestsIfPartitionMissing: Boolean = true) extends PartitionedLoadBalancerFactory[PartitionedId] {
+abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](numPartitions: Int, serveRequestsIfPartitionMissing: Boolean = true) extends PartitionedLoadBalancerFactory[PartitionedId] {
   def newLoadBalancer(endpoints: Set[Endpoint]): PartitionedLoadBalancer[PartitionedId] = new PartitionedLoadBalancer[PartitionedId] with DefaultLoadBalancerHelper {
-    val numPartitions: Int = getNumPartitions(endpoints)
     val partitionToNodeMap = generatePartitionToNodeMap(endpoints, numPartitions, serveRequestsIfPartitionMissing)
 
     def nextNode(id: PartitionedId, capability: Option[Long] = None) = nodeForPartition(partitionForId(id), capability)
-    /**
-     * Calculates the id of the partition on which the specified <code>Id</code> resides.
-     *
-     * @param id the <code>Id</code> to map to a partition
-     *
-     * @return the id of the partition on which the <code>Id</code> resides
-     */
-    def partitionForId(id: PartitionedId): Int = {
-      calculateHash(id).abs % numPartitions
-    }
+
 
     def nodesForPartitionedId(id: PartitionedId, capability: Option[Long] = None) = {
       partitionToNodeMap.getOrElse(partitionForId(id), (Vector.empty[Endpoint], new AtomicInteger(0), new Array[AtomicBoolean](0)))._1.filter(_.node.isCapableOf(capability)).toSet.map
@@ -69,6 +59,16 @@ abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](serveRequest
           throw new InvalidClusterException("Partition %s is unavailable, cannot serve requests.".format(partition))
       }
     }
+  }
+  /**
+   * Calculates the id of the partition on which the specified <code>Id</code> resides.
+   *
+   * @param id the <code>Id</code> to map to a partition
+   *
+   * @return the id of the partition on which the <code>Idrever</code> resides
+   */
+  def partitionForId(id: PartitionedId): Int = {
+    calculateHash(id).abs % numPartitions
   }
 
   /**
