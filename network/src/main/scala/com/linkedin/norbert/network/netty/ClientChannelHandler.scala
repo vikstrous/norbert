@@ -144,6 +144,7 @@ class ClientChannelHandler(clientName: Option[String],
   override def exceptionCaught(ctx: ChannelHandlerContext, e: ExceptionEvent) = log.warn(e.getCause, "Caught exception in network layer")
 
   def shutdown: Unit = {
+    responseHandler.shutdown
     statsJMX.foreach { JMX.unregister(_) }
     serverErrorStrategyJMX.foreach { JMX.unregister(_) }
     clientStatsStrategyJMX.foreach { JMX.unregister(_) }
