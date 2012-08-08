@@ -21,11 +21,20 @@ import org.specs.Specification
 import org.specs.mock.Mockito
 import org.specs.util.WaitFor
 import common.SampleMessage
+import scala.collection.mutable.MutableList
 
 class MessageExecutorSpec extends Specification with Mockito with WaitFor with SampleMessage {
   val messageHandlerRegistry = mock[MessageHandlerRegistry]
+  val filter1 = mock[Filter]
+  val filter2 = mock[Filter]
+  val requestContext = mock[RequestContext]
+  val exception = mock[Exception]
+  val filters = new MutableList[Filter]
+  filters ++= (List(filter1, filter2))
+
   val messageExecutor = new ThreadPoolMessageExecutor("service",
     messageHandlerRegistry,
+    filters,
     1000L,
     1,
     1,
@@ -55,7 +64,7 @@ class MessageExecutorSpec extends Specification with Mockito with WaitFor with S
     "find the handler associated with the specified message" in {
       messageHandlerRegistry.handlerFor(request) returns returnHandler _
 
-      messageExecutor.executeMessage(request, (either: Either[Exception, Ping]) => null)
+      messageExecutor.executeMessage(request, (either: Either[Exception, Ping]) => null, None)
 
       waitFor(50.ms)
 
@@ -70,7 +79,7 @@ class MessageExecutorSpec extends Specification with Mockito with WaitFor with S
       }
       messageHandlerRegistry.handlerFor(request) returns h _
 
-      messageExecutor.executeMessage(request, (either: Either[Exception, Ping]) => null)
+      messageExecutor.executeMessage(request, (either: Either[Exception, Ping]) => null, None)
 
       wasCalled must eventually(beTrue)
     }
@@ -116,6 +125,52 @@ class MessageExecutorSpec extends Specification with Mockito with WaitFor with S
       either.left.get must haveClass[InvalidMessageException]
     }
 
+    "filters are executed when message is valid" in {
+      messageHandlerRegistry.handlerFor(request) returns returnHandler _
+      messageExecutor.executeMessage(request, (either: Either[Exception, Ping]) => null, Some(requestContext))
+
+      waitFor(5.ms)
+      there was one(filter1).onRequest(request, requestContext) then one(filter2).onRequest(request, requestContext) orderedBy(filter1, filter2)
+      there was one(filter2).onResponse(request, requestContext) then one(filter1).onResponse(request, requestContext) orderedBy(filter2, filter1)
+    }
+
+    "filters are executed when handler return null" in {
+      messageHandlerRegistry.handlerFor(request) returns nullHandler _
+      messageExecutor.executeMessage(request, handler _, Some(requestContext))
+
+      waitFor(5.ms)
+      there was one(filter1).onRequest(request, requestContext) then one(filter2).onRequest(request, requestContext) orderedBy(filter1, filter2)
+      there was one(filter2).onResponse(null, requestContext) then one(filter1).onResponse(null, requestContext) orderedBy(filter2, filter1)
+    }
+
+    "filters are executed when handler throws an exception" in {
+      messageHandlerRegistry.handlerFor(request) returns throwsHandler _
+      messageExecutor.executeMessage(request, handler _, Some(requestContext))
+      
+      waitFor(5.ms)
+      there was one(filter1).onRequest(request, requestContext) then one(filter2).onRequest(request, requestContext) orderedBy(filter1, filter2)
+      there was one(filter2).onError(exception, requestContext) then one(filter1).onError(exception, requestContext) orderedBy(filter2, filter1)
+      there was no(filter1).onResponse(request, requestContext)
+      there was no(filter2).onResponse(request, requestContext)
+    }
+
+    "filters are not executed when message is not registered" in {
+      val ie = new InvalidMessageException("")
+      messageHandlerRegistry.handlerFor(request) throws ie
+      messageExecutor.executeMessage(request, handler _, Some(requestContext))
+
+      waitFor(5.ms)
+      there was no(filter1).onError(ie, requestContext)
+      there was no(filter2).onError(ie, requestContext)
+    }
+
+    "filters are added via addFilters" in {
+      val filter3 = mock[Filter]
+      val filter4 = mock[Filter]
+      messageExecutor.addFilters(List(filter3, filter4))
+      messageExecutor.filters must be_==(List(filter1, filter2, filter3, filter4))
+    }
+
 //    "execute the responseHandler with Left(InvalidMessageException) if the response message is of the wrong type" in {
 ////      messageHandlerRegistry.validResponseFor(request, request) returns false
 //      messageHandlerRegistry.handlerFor(request) returns returnHandler _
@@ -143,6 +198,6 @@ class MessageExecutorSpec extends Specification with Mockito with WaitFor with S
   }
 
   def returnHandler(message: Ping): Ping = message
-  def throwsHandler(message: Ping): Ping = throw new Exception
+  def throwsHandler(message: Ping): Ping = throw exception
   def nullHandler(message: Ping): Ping = null
 }

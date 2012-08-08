@@ -21,6 +21,7 @@ import org.specs.Specification
 import org.specs.mock.Mockito
 import cluster._
 import network.common.SampleMessage
+import scala.collection.mutable.MutableList
 
 class NetworkServerSpec extends Specification with Mockito with SampleMessage {
   val networkServer = new NetworkServer with ClusterClientComponent with ClusterIoServerComponent with MessageHandlerRegistryComponent
@@ -28,7 +29,7 @@ class NetworkServerSpec extends Specification with Mockito with SampleMessage {
     val clusterIoServer = mock[ClusterIoServer]
     val clusterClient = mock[ClusterClient]
     val messageHandlerRegistry = mock[MessageHandlerRegistry]
-    val messageExecutor = null
+    val messageExecutor = mock[MessageExecutor]
   }
 
   val node = Node(1, "", false)
@@ -56,6 +57,14 @@ class NetworkServerSpec extends Specification with Mockito with SampleMessage {
       doNothing.when(networkServer.messageHandlerRegistry).registerHandler((ping: Ping) => new Ping)
 
       networkServer.registerHandler((ping : Ping) => new Ping)
+    }
+
+    "add filters with the MessageExcutor" in {
+      val filters = mock[List[Filter]]
+      doNothing.when(networkServer.messageExecutor).addFilters(filters)
+
+      networkServer.addFilters(filters)
+      there was one(networkServer.messageExecutor).addFilters(filters)
     }
 
     "when bind is called" in {

@@ -49,6 +49,8 @@ trait NetworkServer extends Logging {
     messageHandlerRegistry.registerHandler(handler)
   }
 
+  def addFilters(filters: List[Filter]) : Unit = messageExecutor.addFilters(filters)
+
   /**
    * Binds the network server instance to the wildcard address and the port of the <code>Node</code> identified
    * by the provided nodeId and automatically marks the <code>Node</code> available in the cluster.  A

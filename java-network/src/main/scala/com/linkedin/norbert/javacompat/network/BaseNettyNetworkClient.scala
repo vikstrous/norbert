@@ -70,7 +70,10 @@ class NettyNetworkClient(config: NetworkClientConfig, loadBalancerFactory: LoadB
     def newLoadBalancer(endpoints: Set[SEndpoint]) = new SLoadBalancer {
       private val lb = loadBalancerFactory.newLoadBalancer(endpoints)
 
-      def nextNode = Option(lb.nextNode)
+      def nextNode(capability: Option[Long]) = Option(capability match {
+                                                        case Some(c) => lb.nextNode(c.longValue)
+                                                        case None => lb.nextNode
+                                                      })
     }
   }
 

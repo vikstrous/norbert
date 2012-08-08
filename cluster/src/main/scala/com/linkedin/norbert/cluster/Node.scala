@@ -84,4 +84,12 @@ final case class Node(id: Int, url: String, available: Boolean, partitionIds: Se
   }
 
   override def toString = "Node(%d,%s,[%s],%b,0x%08X)".format(id, url, partitionIds.mkString(","), available, if (capability.isEmpty) 0L else capability.get)
+
+  def isCapableOf(c: Option[Long]) : Boolean = {
+    (capability, c) match {
+      case (Some(nc), Some(rc)) => (nc & rc) == rc
+      case (None, Some(rc)) => rc == 0L
+      case _ => true
+    }
+  }
 }

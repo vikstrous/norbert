@@ -34,6 +34,16 @@ public final class NorbertProtos {
     // optional string error_message = 13;
     boolean hasErrorMessage();
     String getErrorMessage();
+    
+    // repeated .norbert.NorbertMessage.Header header = 14;
+    java.util.List<com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header> 
+        getHeaderList();
+    com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header getHeader(int index);
+    int getHeaderCount();
+    java.util.List<? extends com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.HeaderOrBuilder> 
+        getHeaderOrBuilderList();
+    com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.HeaderOrBuilder getHeaderOrBuilder(
+        int index);
   }
   public static final class NorbertMessage extends
       com.google.protobuf.GeneratedMessage
@@ -133,6 +143,481 @@ public final class NorbertProtos {
       }
       
       // @@protoc_insertion_point(enum_scope:norbert.NorbertMessage.Status)
+    }
+    
+    public interface HeaderOrBuilder
+        extends com.google.protobuf.MessageOrBuilder {
+      
+      // required string key = 1;
+      boolean hasKey();
+      String getKey();
+      
+      // optional string value = 2;
+      boolean hasValue();
+      String getValue();
+    }
+    public static final class Header extends
+        com.google.protobuf.GeneratedMessage
+        implements HeaderOrBuilder {
+      // Use Header.newBuilder() to construct.
+      private Header(Builder builder) {
+        super(builder);
+      }
+      private Header(boolean noInit) {}
+      
+      private static final Header defaultInstance;
+      public static Header getDefaultInstance() {
+        return defaultInstance;
+      }
+      
+      public Header getDefaultInstanceForType() {
+        return defaultInstance;
+      }
+      
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return com.linkedin.norbert.protos.NorbertProtos.internal_static_norbert_NorbertMessage_Header_descriptor;
+      }
+      
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return com.linkedin.norbert.protos.NorbertProtos.internal_static_norbert_NorbertMessage_Header_fieldAccessorTable;
+      }
+      
+      private int bitField0_;
+      // required string key = 1;
+      public static final int KEY_FIELD_NUMBER = 1;
+      private Object key_;
+      public boolean hasKey() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      public String getKey() {
+        Object ref = key_;
+        if (ref instanceof String) {
+          return (String) ref;
+        } else {
+          com.google.protobuf.ByteString bs = 
+              (com.google.protobuf.ByteString) ref;
+          String s = bs.toStringUtf8();
+          if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+            key_ = s;
+          }
+          return s;
+        }
+      }
+      private com.google.protobuf.ByteString getKeyBytes() {
+        Object ref = key_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+          key_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      
+      // optional string value = 2;
+      public static final int VALUE_FIELD_NUMBER = 2;
+      private Object value_;
+      public boolean hasValue() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      public String getValue() {
+        Object ref = value_;
+        if (ref instanceof String) {
+          return (String) ref;
+        } else {
+          com.google.protobuf.ByteString bs = 
+              (com.google.protobuf.ByteString) ref;
+          String s = bs.toStringUtf8();
+          if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+            value_ = s;
+          }
+          return s;
+        }
+      }
+      private com.google.protobuf.ByteString getValueBytes() {
+        Object ref = value_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+          value_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      
+      private void initFields() {
+        key_ = "";
+        value_ = "";
+      }
+      private byte memoizedIsInitialized = -1;
+      public final boolean isInitialized() {
+        byte isInitialized = memoizedIsInitialized;
+        if (isInitialized != -1) return isInitialized == 1;
+        
+        if (!hasKey()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+        memoizedIsInitialized = 1;
+        return true;
+      }
+      
+      public void writeTo(com.google.protobuf.CodedOutputStream output)
+                          throws java.io.IOException {
+        getSerializedSize();
+        if (((bitField0_ & 0x00000001) == 0x00000001)) {
+          output.writeBytes(1, getKeyBytes());
+        }
+        if (((bitField0_ & 0x00000002) == 0x00000002)) {
+          output.writeBytes(2, getValueBytes());
+        }
+        getUnknownFields().writeTo(output);
+      }
+      
+      private int memoizedSerializedSize = -1;
+      public int getSerializedSize() {
+        int size = memoizedSerializedSize;
+        if (size != -1) return size;
+      
+        size = 0;
+        if (((bitField0_ & 0x00000001) == 0x00000001)) {
+          size += com.google.protobuf.CodedOutputStream
+            .computeBytesSize(1, getKeyBytes());
+        }
+        if (((bitField0_ & 0x00000002) == 0x00000002)) {
+          size += com.google.protobuf.CodedOutputStream
+            .computeBytesSize(2, getValueBytes());
+        }
+        size += getUnknownFields().getSerializedSize();
+        memoizedSerializedSize = size;
+        return size;
+      }
+      
+      @java.lang.Override
+      protected Object writeReplace() throws java.io.ObjectStreamException {
+        return super.writeReplace();
+      }
+      
+      public static com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header parseFrom(
+          com.google.protobuf.ByteString data)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return newBuilder().mergeFrom(data).buildParsed();
+      }
+      public static com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header parseFrom(
+          com.google.protobuf.ByteString data,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return newBuilder().mergeFrom(data, extensionRegistry)
+                 .buildParsed();
+      }
+      public static com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header parseFrom(byte[] data)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return newBuilder().mergeFrom(data).buildParsed();
+      }
+      public static com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header parseFrom(
+          byte[] data,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return newBuilder().mergeFrom(data, extensionRegistry)
+                 .buildParsed();
+      }
+      public static com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header parseFrom(java.io.InputStream input)
+          throws java.io.IOException {
+        return newBuilder().mergeFrom(input).buildParsed();
+      }
+      public static com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header parseFrom(
+          java.io.InputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return newBuilder().mergeFrom(input, extensionRegistry)
+                 .buildParsed();
+      }
+      public static com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header parseDelimitedFrom(java.io.InputStream input)
+          throws java.io.IOException {
+        Builder builder = newBuilder();
+        if (builder.mergeDelimitedFrom(input)) {
+          return builder.buildParsed();
+        } else {
+          return null;
+        }
+      }
+      public static com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header parseDelimitedFrom(
+          java.io.InputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        Builder builder = newBuilder();
+        if (builder.mergeDelimitedFrom(input, extensionRegistry)) {
+          return builder.buildParsed();
+        } else {
+          return null;
+        }
+      }
+      public static com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header parseFrom(
+          com.google.protobuf.CodedInputStream input)
+          throws java.io.IOException {
+        return newBuilder().mergeFrom(input).buildParsed();
+      }
+      public static com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header parseFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return newBuilder().mergeFrom(input, extensionRegistry)
+                 .buildParsed();
+      }
+      
+      public static Builder newBuilder() { return Builder.create(); }
+      public Builder newBuilderForType() { return newBuilder(); }
+      public static Builder newBuilder(com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header prototype) {
+        return newBuilder().mergeFrom(prototype);
+      }
+      public Builder toBuilder() { return newBuilder(this); }
+      
+      @java.lang.Override
+      protected Builder newBuilderForType(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        Builder builder = new Builder(parent);
+        return builder;
+      }
+      public static final class Builder extends
+          com.google.protobuf.GeneratedMessage.Builder<Builder>
+         implements com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.HeaderOrBuilder {
+        public static final com.google.protobuf.Descriptors.Descriptor
+            getDescriptor() {
+          return com.linkedin.norbert.protos.NorbertProtos.internal_static_norbert_NorbertMessage_Header_descriptor;
+        }
+        
+        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+            internalGetFieldAccessorTable() {
+          return com.linkedin.norbert.protos.NorbertProtos.internal_static_norbert_NorbertMessage_Header_fieldAccessorTable;
+        }
+        
+        // Construct using com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header.newBuilder()
+        private Builder() {
+          maybeForceBuilderInitialization();
+        }
+        
+        private Builder(BuilderParent parent) {
+          super(parent);
+          maybeForceBuilderInitialization();
+        }
+        private void maybeForceBuilderInitialization() {
+          if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          }
+        }
+        private static Builder create() {
+          return new Builder();
+        }
+        
+        public Builder clear() {
+          super.clear();
+          key_ = "";
+          bitField0_ = (bitField0_ & ~0x00000001);
+          value_ = "";
+          bitField0_ = (bitField0_ & ~0x00000002);
+          return this;
+        }
+        
+        public Builder clone() {
+          return create().mergeFrom(buildPartial());
+        }
+        
+        public com.google.protobuf.Descriptors.Descriptor
+            getDescriptorForType() {
+          return com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header.getDescriptor();
+        }
+        
+        public com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header getDefaultInstanceForType() {
+          return com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header.getDefaultInstance();
+        }
+        
+        public com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header build() {
+          com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header result = buildPartial();
+          if (!result.isInitialized()) {
+            throw newUninitializedMessageException(result);
+          }
+          return result;
+        }
+        
+        private com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header buildParsed()
+            throws com.google.protobuf.InvalidProtocolBufferException {
+          com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header result = buildPartial();
+          if (!result.isInitialized()) {
+            throw newUninitializedMessageException(
+              result).asInvalidProtocolBufferException();
+          }
+          return result;
+        }
+        
+        public com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header buildPartial() {
+          com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header result = new com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header(this);
+          int from_bitField0_ = bitField0_;
+          int to_bitField0_ = 0;
+          if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+            to_bitField0_ |= 0x00000001;
+          }
+          result.key_ = key_;
+          if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+            to_bitField0_ |= 0x00000002;
+          }
+          result.value_ = value_;
+          result.bitField0_ = to_bitField0_;
+          onBuilt();
+          return result;
+        }
+        
+        public Builder mergeFrom(com.google.protobuf.Message other) {
+          if (other instanceof com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header) {
+            return mergeFrom((com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header)other);
+          } else {
+            super.mergeFrom(other);
+            return this;
+          }
+        }
+        
+        public Builder mergeFrom(com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header other) {
+          if (other == com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header.getDefaultInstance()) return this;
+          if (other.hasKey()) {
+            setKey(other.getKey());
+          }
+          if (other.hasValue()) {
+            setValue(other.getValue());
+          }
+          this.mergeUnknownFields(other.getUnknownFields());
+          return this;
+        }
+        
+        public final boolean isInitialized() {
+          if (!hasKey()) {
+            
+            return false;
+          }
+          return true;
+        }
+        
+        public Builder mergeFrom(
+            com.google.protobuf.CodedInputStream input,
+            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+          com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+            com.google.protobuf.UnknownFieldSet.newBuilder(
+              this.getUnknownFields());
+          while (true) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                this.setUnknownFields(unknownFields.build());
+                onChanged();
+                return this;
+              default: {
+                if (!parseUnknownField(input, unknownFields,
+                                       extensionRegistry, tag)) {
+                  this.setUnknownFields(unknownFields.build());
+                  onChanged();
+                  return this;
+                }
+                break;
+              }
+              case 10: {
+                bitField0_ |= 0x00000001;
+                key_ = input.readBytes();
+                break;
+              }
+              case 18: {
+                bitField0_ |= 0x00000002;
+                value_ = input.readBytes();
+                break;
+              }
+            }
+          }
+        }
+        
+        private int bitField0_;
+        
+        // required string key = 1;
+        private Object key_ = "";
+        public boolean hasKey() {
+          return ((bitField0_ & 0x00000001) == 0x00000001);
+        }
+        public String getKey() {
+          Object ref = key_;
+          if (!(ref instanceof String)) {
+            String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+            key_ = s;
+            return s;
+          } else {
+            return (String) ref;
+          }
+        }
+        public Builder setKey(String value) {
+          if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+          key_ = value;
+          onChanged();
+          return this;
+        }
+        public Builder clearKey() {
+          bitField0_ = (bitField0_ & ~0x00000001);
+          key_ = getDefaultInstance().getKey();
+          onChanged();
+          return this;
+        }
+        void setKey(com.google.protobuf.ByteString value) {
+          bitField0_ |= 0x00000001;
+          key_ = value;
+          onChanged();
+        }
+        
+        // optional string value = 2;
+        private Object value_ = "";
+        public boolean hasValue() {
+          return ((bitField0_ & 0x00000002) == 0x00000002);
+        }
+        public String getValue() {
+          Object ref = value_;
+          if (!(ref instanceof String)) {
+            String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+            value_ = s;
+            return s;
+          } else {
+            return (String) ref;
+          }
+        }
+        public Builder setValue(String value) {
+          if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000002;
+          value_ = value;
+          onChanged();
+          return this;
+        }
+        public Builder clearValue() {
+          bitField0_ = (bitField0_ & ~0x00000002);
+          value_ = getDefaultInstance().getValue();
+          onChanged();
+          return this;
+        }
+        void setValue(com.google.protobuf.ByteString value) {
+          bitField0_ |= 0x00000002;
+          value_ = value;
+          onChanged();
+        }
+        
+        // @@protoc_insertion_point(builder_scope:norbert.NorbertMessage.Header)
+      }
+      
+      static {
+        defaultInstance = new Header(true);
+        defaultInstance.initFields();
+      }
+      
+      // @@protoc_insertion_point(class_scope:norbert.NorbertMessage.Header)
     }
     
     private int bitField0_;
@@ -240,6 +725,27 @@ public final class NorbertProtos {
       }
     }
     
+    // repeated .norbert.NorbertMessage.Header header = 14;
+    public static final int HEADER_FIELD_NUMBER = 14;
+    private java.util.List<com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header> header_;
+    public java.util.List<com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header> getHeaderList() {
+      return header_;
+    }
+    public java.util.List<? extends com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.HeaderOrBuilder> 
+        getHeaderOrBuilderList() {
+      return header_;
+    }
+    public int getHeaderCount() {
+      return header_.size();
+    }
+    public com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header getHeader(int index) {
+      return header_.get(index);
+    }
+    public com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.HeaderOrBuilder getHeaderOrBuilder(
+        int index) {
+      return header_.get(index);
+    }
+    
     private void initFields() {
       requestIdMsb_ = 0L;
       requestIdLsb_ = 0L;
@@ -247,6 +753,7 @@ public final class NorbertProtos {
       messageName_ = "";
       message_ = com.google.protobuf.ByteString.EMPTY;
       errorMessage_ = "";
+      header_ = java.util.Collections.emptyList();
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -264,6 +771,12 @@ public final class NorbertProtos {
       if (!hasMessageName()) {
         memoizedIsInitialized = 0;
         return false;
+      }
+      for (int i = 0; i < getHeaderCount(); i++) {
+        if (!getHeader(i).isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
       }
       memoizedIsInitialized = 1;
       return true;
@@ -289,6 +802,9 @@ public final class NorbertProtos {
       }
       if (((bitField0_ & 0x00000020) == 0x00000020)) {
         output.writeBytes(13, getErrorMessageBytes());
+      }
+      for (int i = 0; i < header_.size(); i++) {
+        output.writeMessage(14, header_.get(i));
       }
       getUnknownFields().writeTo(output);
     }
@@ -322,6 +838,10 @@ public final class NorbertProtos {
       if (((bitField0_ & 0x00000020) == 0x00000020)) {
         size += com.google.protobuf.CodedOutputStream
           .computeBytesSize(13, getErrorMessageBytes());
+      }
+      for (int i = 0; i < header_.size(); i++) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(14, header_.get(i));
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -437,6 +957,7 @@ public final class NorbertProtos {
       }
       private void maybeForceBuilderInitialization() {
         if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          getHeaderFieldBuilder();
         }
       }
       private static Builder create() {
@@ -457,6 +978,12 @@ public final class NorbertProtos {
         bitField0_ = (bitField0_ & ~0x00000010);
         errorMessage_ = "";
         bitField0_ = (bitField0_ & ~0x00000020);
+        if (headerBuilder_ == null) {
+          header_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00000040);
+        } else {
+          headerBuilder_.clear();
+        }
         return this;
       }
       
@@ -519,6 +1046,15 @@ public final class NorbertProtos {
           to_bitField0_ |= 0x00000020;
         }
         result.errorMessage_ = errorMessage_;
+        if (headerBuilder_ == null) {
+          if (((bitField0_ & 0x00000040) == 0x00000040)) {
+            header_ = java.util.Collections.unmodifiableList(header_);
+            bitField0_ = (bitField0_ & ~0x00000040);
+          }
+          result.header_ = header_;
+        } else {
+          result.header_ = headerBuilder_.build();
+        }
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -553,6 +1089,32 @@ public final class NorbertProtos {
         if (other.hasErrorMessage()) {
           setErrorMessage(other.getErrorMessage());
         }
+        if (headerBuilder_ == null) {
+          if (!other.header_.isEmpty()) {
+            if (header_.isEmpty()) {
+              header_ = other.header_;
+              bitField0_ = (bitField0_ & ~0x00000040);
+            } else {
+              ensureHeaderIsMutable();
+              header_.addAll(other.header_);
+            }
+            onChanged();
+          }
+        } else {
+          if (!other.header_.isEmpty()) {
+            if (headerBuilder_.isEmpty()) {
+              headerBuilder_.dispose();
+              headerBuilder_ = null;
+              header_ = other.header_;
+              bitField0_ = (bitField0_ & ~0x00000040);
+              headerBuilder_ = 
+                com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
+                   getHeaderFieldBuilder() : null;
+            } else {
+              headerBuilder_.addAllMessages(other.header_);
+            }
+          }
+        }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
@@ -569,6 +1131,12 @@ public final class NorbertProtos {
         if (!hasMessageName()) {
           
           return false;
+        }
+        for (int i = 0; i < getHeaderCount(); i++) {
+          if (!getHeader(i).isInitialized()) {
+            
+            return false;
+          }
         }
         return true;
       }
@@ -630,6 +1198,12 @@ public final class NorbertProtos {
             case 106: {
               bitField0_ |= 0x00000020;
               errorMessage_ = input.readBytes();
+              break;
+            }
+            case 114: {
+              com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header.Builder subBuilder = com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header.newBuilder();
+              input.readMessage(subBuilder, extensionRegistry);
+              addHeader(subBuilder.buildPartial());
               break;
             }
           }
@@ -798,6 +1372,192 @@ public final class NorbertProtos {
         bitField0_ |= 0x00000020;
         errorMessage_ = value;
         onChanged();
+      }
+      
+      // repeated .norbert.NorbertMessage.Header header = 14;
+      private java.util.List<com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header> header_ =
+        java.util.Collections.emptyList();
+      private void ensureHeaderIsMutable() {
+        if (!((bitField0_ & 0x00000040) == 0x00000040)) {
+          header_ = new java.util.ArrayList<com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header>(header_);
+          bitField0_ |= 0x00000040;
+         }
+      }
+      
+      private com.google.protobuf.RepeatedFieldBuilder<
+          com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header, com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header.Builder, com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.HeaderOrBuilder> headerBuilder_;
+      
+      public java.util.List<com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header> getHeaderList() {
+        if (headerBuilder_ == null) {
+          return java.util.Collections.unmodifiableList(header_);
+        } else {
+          return headerBuilder_.getMessageList();
+        }
+      }
+      public int getHeaderCount() {
+        if (headerBuilder_ == null) {
+          return header_.size();
+        } else {
+          return headerBuilder_.getCount();
+        }
+      }
+      public com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header getHeader(int index) {
+        if (headerBuilder_ == null) {
+          return header_.get(index);
+        } else {
+          return headerBuilder_.getMessage(index);
+        }
+      }
+      public Builder setHeader(
+          int index, com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header value) {
+        if (headerBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureHeaderIsMutable();
+          header_.set(index, value);
+          onChanged();
+        } else {
+          headerBuilder_.setMessage(index, value);
+        }
+        return this;
+      }
+      public Builder setHeader(
+          int index, com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header.Builder builderForValue) {
+        if (headerBuilder_ == null) {
+          ensureHeaderIsMutable();
+          header_.set(index, builderForValue.build());
+          onChanged();
+        } else {
+          headerBuilder_.setMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+      public Builder addHeader(com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header value) {
+        if (headerBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureHeaderIsMutable();
+          header_.add(value);
+          onChanged();
+        } else {
+          headerBuilder_.addMessage(value);
+        }
+        return this;
+      }
+      public Builder addHeader(
+          int index, com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header value) {
+        if (headerBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureHeaderIsMutable();
+          header_.add(index, value);
+          onChanged();
+        } else {
+          headerBuilder_.addMessage(index, value);
+        }
+        return this;
+      }
+      public Builder addHeader(
+          com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header.Builder builderForValue) {
+        if (headerBuilder_ == null) {
+          ensureHeaderIsMutable();
+          header_.add(builderForValue.build());
+          onChanged();
+        } else {
+          headerBuilder_.addMessage(builderForValue.build());
+        }
+        return this;
+      }
+      public Builder addHeader(
+          int index, com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header.Builder builderForValue) {
+        if (headerBuilder_ == null) {
+          ensureHeaderIsMutable();
+          header_.add(index, builderForValue.build());
+          onChanged();
+        } else {
+          headerBuilder_.addMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+      public Builder addAllHeader(
+          java.lang.Iterable<? extends com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header> values) {
+        if (headerBuilder_ == null) {
+          ensureHeaderIsMutable();
+          super.addAll(values, header_);
+          onChanged();
+        } else {
+          headerBuilder_.addAllMessages(values);
+        }
+        return this;
+      }
+      public Builder clearHeader() {
+        if (headerBuilder_ == null) {
+          header_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00000040);
+          onChanged();
+        } else {
+          headerBuilder_.clear();
+        }
+        return this;
+      }
+      public Builder removeHeader(int index) {
+        if (headerBuilder_ == null) {
+          ensureHeaderIsMutable();
+          header_.remove(index);
+          onChanged();
+        } else {
+          headerBuilder_.remove(index);
+        }
+        return this;
+      }
+      public com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header.Builder getHeaderBuilder(
+          int index) {
+        return getHeaderFieldBuilder().getBuilder(index);
+      }
+      public com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.HeaderOrBuilder getHeaderOrBuilder(
+          int index) {
+        if (headerBuilder_ == null) {
+          return header_.get(index);  } else {
+          return headerBuilder_.getMessageOrBuilder(index);
+        }
+      }
+      public java.util.List<? extends com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.HeaderOrBuilder> 
+           getHeaderOrBuilderList() {
+        if (headerBuilder_ != null) {
+          return headerBuilder_.getMessageOrBuilderList();
+        } else {
+          return java.util.Collections.unmodifiableList(header_);
+        }
+      }
+      public com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header.Builder addHeaderBuilder() {
+        return getHeaderFieldBuilder().addBuilder(
+            com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header.getDefaultInstance());
+      }
+      public com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header.Builder addHeaderBuilder(
+          int index) {
+        return getHeaderFieldBuilder().addBuilder(
+            index, com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header.getDefaultInstance());
+      }
+      public java.util.List<com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header.Builder> 
+           getHeaderBuilderList() {
+        return getHeaderFieldBuilder().getBuilderList();
+      }
+      private com.google.protobuf.RepeatedFieldBuilder<
+          com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header, com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header.Builder, com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.HeaderOrBuilder> 
+          getHeaderFieldBuilder() {
+        if (headerBuilder_ == null) {
+          headerBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
+              com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header, com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header.Builder, com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.HeaderOrBuilder>(
+                  header_,
+                  ((bitField0_ & 0x00000040) == 0x00000040),
+                  getParentForChildren(),
+                  isClean());
+          header_ = null;
+        }
+        return headerBuilder_;
       }
       
       // @@protoc_insertion_point(builder_scope:norbert.NorbertMessage)
@@ -1371,6 +2131,11 @@ public final class NorbertProtos {
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_norbert_NorbertMessage_fieldAccessorTable;
   private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_norbert_NorbertMessage_Header_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_norbert_NorbertMessage_Header_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
     internal_static_norbert_Node_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
@@ -1384,15 +2149,17 @@ public final class NorbertProtos {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\rnorbert.proto\022\007norbert\"\336\001\n\016NorbertMess" +
+      "\n\rnorbert.proto\022\007norbert\"\264\002\n\016NorbertMess" +
       "age\022\026\n\016request_id_msb\030\001 \002(\020\022\026\n\016request_i" +
       "d_lsb\030\002 \002(\020\0222\n\006status\030\n \001(\0162\036.norbert.No" +
       "rbertMessage.Status:\002OK\022\024\n\014message_name\030" +
       "\013 \002(\t\022\017\n\007message\030\014 \001(\014\022\025\n\rerror_message\030" +
-      "\r \001(\t\"*\n\006Status\022\006\n\002OK\020\000\022\t\n\005ERROR\020\001\022\r\n\tHE" +
-      "AVYLOAD\020\002\"2\n\004Node\022\n\n\002id\030\001 \002(\005\022\013\n\003url\030\002 \002" +
-      "(\t\022\021\n\tpartition\030\003 \003(\005B.\n\033com.linkedin.no" +
-      "rbert.protosB\rNorbertProtosH\001"
+      "\r \001(\t\022.\n\006header\030\016 \003(\0132\036.norbert.NorbertM" +
+      "essage.Header\032$\n\006Header\022\013\n\003key\030\001 \002(\t\022\r\n\005" +
+      "value\030\002 \001(\t\"*\n\006Status\022\006\n\002OK\020\000\022\t\n\005ERROR\020\001" +
+      "\022\r\n\tHEAVYLOAD\020\002\"2\n\004Node\022\n\n\002id\030\001 \002(\005\022\013\n\003u" +
+      "rl\030\002 \002(\t\022\021\n\tpartition\030\003 \003(\005B.\n\033com.linke",
+      "din.norbert.protosB\rNorbertProtosH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -1404,9 +2171,17 @@ public final class NorbertProtos {
           internal_static_norbert_NorbertMessage_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_norbert_NorbertMessage_descriptor,
-              new java.lang.String[] { "RequestIdMsb", "RequestIdLsb", "Status", "MessageName", "Message", "ErrorMessage", },
+              new java.lang.String[] { "RequestIdMsb", "RequestIdLsb", "Status", "MessageName", "Message", "ErrorMessage", "Header", },
               com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.class,
               com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Builder.class);
+          internal_static_norbert_NorbertMessage_Header_descriptor =
+            internal_static_norbert_NorbertMessage_descriptor.getNestedTypes().get(0);
+          internal_static_norbert_NorbertMessage_Header_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_norbert_NorbertMessage_Header_descriptor,
+              new java.lang.String[] { "Key", "Value", },
+              com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header.class,
+              com.linkedin.norbert.protos.NorbertProtos.NorbertMessage.Header.Builder.class);
           internal_static_norbert_Node_descriptor =
             getDescriptor().getMessageTypes().get(1);
           internal_static_norbert_Node_fieldAccessorTable = new

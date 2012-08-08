@@ -46,6 +46,11 @@ public class RingHashPartitionedLoadBalancer implements PartitionedLoadBalancer<
   }
 
   public Node nextNode(Integer partitionedId) {
+    return nextNode(partitionedId, 0L);
+  }
+
+  @Override
+  public Node nextNode(Integer partitionedId, Long capability) {
     if (nodeCircleMap.isEmpty())
       return null;
 
@@ -58,7 +63,7 @@ public class RingHashPartitionedLoadBalancer implements PartitionedLoadBalancer<
 
     do {
       Node node = endpoint.getNode();
-      if(endpoint.canServeRequests()) {
+      if(endpoint.canServeRequests() && node.isCapableOf(capability)) {
         if (log.isDebugEnabled())
           log.debug(partitionedId + " is sent to node " + node.getId());
         return node;
@@ -74,19 +79,34 @@ public class RingHashPartitionedLoadBalancer implements PartitionedLoadBalancer<
     log.warn("All endpoints seem unavailable! Using the default");
     return firstEndpoint.getNode();
   }
-
+  
   @Override
   public Set<Node> nodesForPartitionedId(Integer partitionedId) {
     throw new UnsupportedOperationException();
   }
-
+  
+  @Override
+  public Set<Node> nodesForPartitionedId(Integer partitionedId, Long capability) {
+    throw new UnsupportedOperationException();
+  }
+  
   @Override
   public Map<Node, Set<Integer>> nodesForOneReplica(Integer partitionedId) {
     throw new UnsupportedOperationException();
   }
 
   @Override
+  public Map<Node, Set<Integer>> nodesForOneReplica(Integer partitionedId, Long capability) {
+    throw new UnsupportedOperationException();
+  }
+  
+  @Override
   public Map<Node, Set<Integer>> nodesForPartitions(Integer integer, Set<Integer> partitions) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public Map<Node, Set<Integer>> nodesForPartitions(Integer integer, Set<Integer> partitions, Long capability) {
     throw new UnsupportedOperationException();
   }
 }

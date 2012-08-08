@@ -31,8 +31,17 @@ trait LoadBalancer {
    * @return the <code>Some(node)</code> to route the next message to or <code>None</code> if there are no <code>Node</code>s
    * available
    */
-  def nextNode: Option[Node]
+  def nextNode: Option[Node] = nextNode(None)
+
+  /**
+   * Returns the next <code>Node</code> that serving the capability value if not None a message should be routed to.
+   * @param capability
+   * @return the <code>Some(node)</code> to route the next message to or <code>None</code> if there are no <code>Node</code>'s
+   * available;
+   */
+  def nextNode(capability : Option[Long] = None): Option[Node]
 }
+
 
 /**
  * A factory which can generate <code>LoadBalancer</code>s.
