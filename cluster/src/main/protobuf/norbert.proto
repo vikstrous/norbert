@@ -18,6 +18,12 @@ message NorbertMessage {
   required string message_name = 11;
   optional bytes message = 12;
   optional string error_message = 13;
+
+  message Header {
+    required string key = 1;
+    optional string value = 2;
+  }
+  repeated Header header = 14;
 }
 
 message Node {

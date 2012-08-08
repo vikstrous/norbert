@@ -16,12 +16,17 @@
 package com.linkedin.norbert
 package network
 
-import netty.NetworkServerConfig
+
+import netty.{RequestContext => NettyRequestContext, NetworkServerConfig}
 import org.jboss.netty.logging.{InternalLoggerFactory, Log4JLoggerFactory}
 import com.google.protobuf.Message
-import server.NetworkServer
 import protos.NorbertExampleProtos
 import cluster.ClusterClient
+import norbertutils._
+import server.{RequestContext, NetworkServer}
+import network.NorbertNetworkServerMain.LogFilter
+import protos.NorbertProtos.NorbertMessage
+
 
 object NorbertNetworkServerMain {
   InternalLoggerFactory.setDefaultFactory(new Log4JLoggerFactory)
@@ -38,6 +43,7 @@ object NorbertNetworkServerMain {
     val ns = NetworkServer(config)
 
     ns.registerHandler(pingHandler)
+    ns.addFilters(List(new LogFilter))
 
     ns.bind(args(2).toInt)
 
@@ -48,8 +54,31 @@ object NorbertNetworkServerMain {
     })
   }
 
-  private def pingHandler(ping: Ping): Ping = {
+  private def pingHandler(ping: Ping): Pong = {
     println("Requested ping from client %d milliseconds ago (assuming synchronized clocks)".format(ping.timestamp - System.currentTimeMillis) )
-    Ping(System.currentTimeMillis)
+    Pong(System.currentTimeMillis)
+  }
+
+  class LogFilter extends netty.Filter  {
+    val clock = SystemClock
+    def onRequest(request: Any, context: RequestContext)
+    { context.attributes += ("START_TIMER" -> clock.getCurrentTime) }
+
+    def onResponse(response: Any, context: RequestContext)
+    { val start: Long = context.attributes.getOrElse("START_TIMER", -1).asInstanceOf[Long]
+      println("server side time logging: " + (clock.getCurrentTime - start) + " ms.")
+    }
+
+    def onMessage(message: NorbertMessage, context: RequestContext) =
+    { context.attributes += ("PRE_SERIALIZATION" -> clock.getCurrentTime) }
+
+    def postMessage(message: NorbertMessage, context: RequestContext) =
+    {
+      val start: Long = context.attributes.getOrElse("PRE_SERIALIZATION", -1).asInstanceOf[Long]
+      println("server side time logging including serialization: " + (clock.getCurrentTime - start) + " ms.")
+    }
+
+    def onError(error: Exception, context: RequestContext)
+    {}
   }
 }

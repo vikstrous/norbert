@@ -55,11 +55,11 @@ class PartitionedConsistentHashedLoadBalancerSpec extends Specification {
 //  }
   
   val sampleNodes = Set(
-    Node(0, "localhost:31313", true, Set(0, 1)),
+    Node(0, "localhost:31313", true, Set(0, 1), Some(0x1)),
     Node(1, "localhost:31313", true, Set(1, 2)),
     Node(2, "localhost:31313", true, Set(2, 3)),
     Node(3, "localhost:31313", true, Set(3, 4)),
-    Node(4, "localhost:31313", true, Set(0, 4)))
+    Node(4, "localhost:31313", true, Set(0, 4), Some(0x2)))
   
 
   "ConsistentHashPartitionedLoadBalancer" should {
@@ -68,13 +68,16 @@ class PartitionedConsistentHashedLoadBalancerSpec extends Specification {
       val lb = loadBalancerFactory.newLoadBalancer(toEndpoints(nodes))
       lb.nextNode(1210) must beSome[Node].which(List(Node(0, "localhost:31313", true, Set(0, 1)),
         Node(4, "localhost:31313", true, Set(0, 4))) must contain(_))
+      
+      lb.nextNode(1210, Some(0x1)) must be_==(Some(Node(0, "localhost:31313", true, Set(0, 1))))
+      lb.nextNode(1210, Some(0x2)) must be_==(Some(Node(4, "localhost:31313", true, Set(0, 4))))
+      lb.nextNode(1210, Some(0x5)) must be_==(None)
     }
-
 
     "throw InvalidClusterException if all partitions are unavailable" in {
       val nodes = Set(
-        Node(0, "localhost:31313", true, Set()),
-        Node(1, "localhost:31313", true, Set()))
+        Node(0, "localhost:31313", true, Set[Int]()),
+        Node(1, "localhost:31313", true, Set[Int]()))
 
       new TestLBF(2, false).newLoadBalancer(toEndpoints(nodes)) must throwA[InvalidClusterException]
     }
@@ -82,7 +85,7 @@ class PartitionedConsistentHashedLoadBalancerSpec extends Specification {
     "throw InvalidClusterException if one partition is unavailable, and the LBF cannot serve requests in that state, " in {
       val nodes = Set(
         Node(0, "localhost:31313", true, Set(1)),
-        Node(1, "localhost:31313", true, Set()))
+        Node(1, "localhost:31313", true, Set[Int]()))
 
       new TestLBF(2, true).newLoadBalancer(toEndpoints(nodes)) must not (throwA[InvalidClusterException])
       new TestLBF(2, false).newLoadBalancer(toEndpoints(nodes)) must throwA[InvalidClusterException]
@@ -104,6 +107,7 @@ class PartitionedConsistentHashedLoadBalancerSpec extends Specification {
       val nodes = sampleNodes
       val lb = loadBalancerFactory.newLoadBalancer(toEndpoints(nodes))
       lb.nodesForPartitionedId(1210) must haveTheSameElementsAs (Set(Node(0, "localhost:31313", true, Set(0, 1)), Node(4, "localhost:31313", true, Set(0, 4))))
+      lb.nodesForPartitionedId(1210, Some(0x1)) must haveTheSameElementsAs (Set(Node(0, "localhost:31313", true, Set(0, 1))))
     }
 
     "handle endpoints going down" in {

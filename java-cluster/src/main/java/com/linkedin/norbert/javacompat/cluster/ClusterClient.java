@@ -90,13 +90,24 @@ public interface ClusterClient {
   void removeNode(int nodeId) throws ClusterDisconnectedException;
 
   /**
-   * Marks a cluster node as online and available for receiving requests.
+   * Marks a cluster node as online and available for receiving requests, the capability value associated
+   * with this node is 0L
    *
    * @param nodeId the id of the node to mark available
    *
    * @throws ClusterDisconnectedException thrown if the cluster is disconnected when the method is called
    */
   void markNodeAvailable(int nodeId) throws ClusterDisconnectedException;
+
+  /**
+   * Marks a cluster node as online with an initial capability string to receive requests.
+   *
+   * @param nodeId  the id of the node to mark available
+   * @param capability the capability value associated to the node when it is up
+   *
+   * @throws ClusterDisconnectedException
+   */
+  void markNodeAvailable(int nodeId, long capability) throws ClusterDisconnectedException;
 
   /**
    * Marks a cluster node as offline and unavailable for receiving requests.

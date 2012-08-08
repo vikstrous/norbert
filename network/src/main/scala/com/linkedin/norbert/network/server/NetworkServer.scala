@@ -49,6 +49,8 @@ trait NetworkServer extends Logging {
     messageHandlerRegistry.registerHandler(handler)
   }
 
+  def addFilters(filters: List[Filter]) : Unit = messageExecutor.addFilters(filters)
+
   /**
    * Binds the network server instance to the wildcard address and the port of the <code>Node</code> identified
    * by the provided nodeId and automatically marks the <code>Node</code> available in the cluster.  A
@@ -74,7 +76,7 @@ trait NetworkServer extends Logging {
    * format of the <code>Node</code>'s url isn't hostname:port
    * @throws NetworkingException thrown if unable to bind
    */
-  def bind(nodeId: Int, markAvailable: Boolean): Unit = doIfNotShutdown {
+  def bind(nodeId: Int, markAvailable: Boolean, initialCapability: Long = 0L): Unit = doIfNotShutdown {
     if (nodeOption.isDefined) throw new NetworkingException("Attempt to bind an already bound NetworkServer")
 
     log.info("Starting NetworkServer...")
@@ -96,7 +98,7 @@ trait NetworkServer extends Logging {
           if (markAvailableWhenConnected) {
             log.debug("Marking node with id %d available".format(nodeId))
             try {
-              clusterClient.markNodeAvailable(nodeId)
+              clusterClient.markNodeAvailable(nodeId, initialCapability)
             } catch {
               case ex: ClusterException => log.error(ex, "Unable to mark node available")
             }
@@ -119,10 +121,15 @@ trait NetworkServer extends Logging {
   def myNode: Node = doIfNotShutdown { nodeOption.getOrElse(throw new NetworkServerNotBoundException) }
 
   /**
-   * Marks the node available in the cluster if the server is bound.
+   * Marks the node available in the cluster if the server is bound with initial capability string as 0L
    */
-  def markAvailable: Unit = {
-    clusterClient.markNodeAvailable(myNode.id)
+  def markAvailable : Unit =markAvailable(0L)
+
+  /**
+   * Marks the node available in the cluster if the server is bound with the initial capability string associated
+   */
+  def markAvailable(initialCapability: Long = 0L): Unit = {
+    clusterClient.markNodeAvailable(myNode.id, initialCapability)
     markAvailableWhenConnected = true
   }
 
@@ -132,6 +139,10 @@ trait NetworkServer extends Logging {
   def markUnavailable: Unit = {
     clusterClient.markNodeUnavailable(myNode.id)
     markAvailableWhenConnected = false
+  }
+  
+  def setNodeCapabiity(capability: Long): Unit = {
+    clusterClient.setNodeCapability(myNode.id, capability)
   }
 
   /**

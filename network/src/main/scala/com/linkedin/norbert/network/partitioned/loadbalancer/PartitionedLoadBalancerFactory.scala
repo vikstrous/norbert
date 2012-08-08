@@ -33,7 +33,7 @@ trait PartitionedLoadBalancer[PartitionedId] {
    *
    * @return the <code>Node</code> to route the next message to
    */
-  def nextNode(id: PartitionedId): Option[Node]
+  def nextNode(id: PartitionedId, capability: Option[Long] = None): Option[Node]
 
   /**
    * Returns a list of nodes representing one replica of the cluster, this is used by the PartitionedNetworkClient to handle
@@ -41,13 +41,13 @@ trait PartitionedLoadBalancer[PartitionedId] {
    *
    * @return the <code>Nodes</code> to broadcast the next message to a replica to
    */
-  def nodesForOneReplica(id: PartitionedId): Map[Node, Set[Int]]
+  def nodesForOneReplica(id: PartitionedId, capability: Option[Long] = None): Map[Node, Set[Int]]
 
   /**
    * Returns a list of nodes representing all replica for this particular partitionedId
    * @return the <code>Nodes</code> to multicast the message to
    */
-  def nodesForPartitionedId(id: PartitionedId): Set[Node]
+  def nodesForPartitionedId(id: PartitionedId, capability: Option[Long] = None): Set[Node]
 
   /**
    * Calculates a mapping of nodes to partitions for broadcasting a partitioned request. Optionally uses a partitioned
@@ -55,7 +55,7 @@ trait PartitionedLoadBalancer[PartitionedId] {
    *
    * @return the <code>Nodes</code> to broadcast the next message to a replica to
    */
-  def nodesForPartitions(id: PartitionedId, partitions: Set[Int]): Map[Node, Set[Int]]
+  def nodesForPartitions(id: PartitionedId, partitions: Set[Int], capability: Option[Long] = None): Map[Node, Set[Int]]
 }
 
 /**

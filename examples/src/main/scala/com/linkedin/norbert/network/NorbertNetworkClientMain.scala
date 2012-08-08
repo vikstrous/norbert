@@ -99,8 +99,8 @@ object NorbertNetworkClientMain {
             case Some(n) =>
               val future = nc.sendRequestToNode(Ping(System.currentTimeMillis), n)
               try {
-                val response = future.get(500, TimeUnit.MILLISECONDS).asInstanceOf[NorbertExampleProtos.PingResponse]
-                println("Ping took %dms".format(System.currentTimeMillis - response.getTimestamp))
+                val response = future.get(500, TimeUnit.MILLISECONDS).asInstanceOf[Pong]
+                println("Ping took %dms".format(System.currentTimeMillis - response.timestamp))
               } catch {
                 case ex: TimeoutException => println("Ping timed out")
                 case ex: ExecutionException => println("Error: %s".format(ex.getCause))

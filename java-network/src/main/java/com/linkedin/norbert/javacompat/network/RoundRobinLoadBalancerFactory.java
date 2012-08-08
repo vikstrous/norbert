@@ -20,6 +20,7 @@ import com.linkedin.norbert.cluster.InvalidClusterException;
 import com.linkedin.norbert.javacompat.cluster.JavaNode;
 import com.linkedin.norbert.javacompat.cluster.Node;
 import scala.Option;
+import scala.Some;
 
 import java.util.Set;
 
@@ -35,12 +36,18 @@ public class RoundRobinLoadBalancerFactory implements LoadBalancerFactory {
       return new LoadBalancer() {
         @Override
         public Node nextNode() {
-          Option<com.linkedin.norbert.cluster.Node> node = loadBalancer.nextNode();
+          return nextNode(0L);
+        }
+
+        @Override
+        public Node nextNode(Long capability){
+          Option<com.linkedin.norbert.cluster.Node> node = loadBalancer.nextNode(new Some<Long>(capability.longValue()));
           if(node.isDefined())
             return JavaNode.apply(node.get());
           else
             return null;
         }
+
       };
     }
 }

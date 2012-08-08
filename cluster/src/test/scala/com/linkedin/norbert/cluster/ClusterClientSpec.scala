@@ -88,7 +88,7 @@ class ClusterClientSpec extends Specification with Mockito with WaitFor {
             nodeRemovedId = id
             reply(ClusterManagerMessages.ClusterManagerResponse(None))
 
-          case ClusterManagerMessages.MarkNodeAvailable(id) =>
+          case ClusterManagerMessages.MarkNodeAvailable(id, initialCapability) =>
             markNodeAvailableCount += 1
             markNodeAvailableId = id
             reply(ClusterManagerMessages.ClusterManagerResponse(None))

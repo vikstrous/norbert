@@ -73,9 +73,11 @@ trait ZooKeeperClusterManagerComponent extends ClusterManagerComponent {
 
           case RemoveNode(nodeId) => handleRemoveNode(nodeId)
 
-          case MarkNodeAvailable(nodeId) => handleMarkNodeAvailable(nodeId)
+          case MarkNodeAvailable(nodeId, initialCapability) => handleMarkNodeAvailable(nodeId, initialCapability)
 
           case MarkNodeUnavailable(nodeId) => handleMarkNodeUnavailable(nodeId)
+
+          case SetNodeCapability(nodeId, capability) => handleSetNodeCapability(nodeId, capability)
 
           case Shutdown => handleShutdown
 
@@ -130,7 +132,15 @@ trait ZooKeeperClusterManagerComponent extends ClusterManagerComponent {
           currentNodes.foreach { case (id, _) => makeNodeUnavailable(id) }
         } else {
           val (available, unavailable) = currentNodes.partition { case (id, _) => availableSet.contains(id) }
-          available.foreach { case (id, _) => makeNodeAvailable(id) }
+          available.foreach { case (id, _) =>
+            val capability = try {
+              val cbytes : Array[Byte] = zk.getData("%s/%d".format(AVAILABILITY_NODE, id), false, null)
+              if (cbytes != null) BigInt(cbytes).longValue else 0L
+            } catch {
+              case ex: KeeperException if ex.code == KeeperException.Code.NONODE => 0L
+            }
+            makeNodeAvailable(id, capability)
+          }
           unavailable.foreach { case (id, _) => makeNodeUnavailable(id) }
         }
 
@@ -190,7 +200,7 @@ trait ZooKeeperClusterManagerComponent extends ClusterManagerComponent {
       }
     }
 
-    private def handleMarkNodeAvailable(nodeId: Int) {
+    private def handleMarkNodeAvailable(nodeId: Int, initialCapability: Long) {
       log.debug("Handling a MarkNodeAvailable(%d) message".format(nodeId))
 
       doIfConnectedWithZooKeeperWithResponse("a MarkNodeAvailable message", "marking node available") { zk =>
@@ -198,13 +208,13 @@ trait ZooKeeperClusterManagerComponent extends ClusterManagerComponent {
 
         if (zk.exists(path, false) == null) {
           try {
-            zk.create(path, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL)
+            zk.create(path, BigInt(initialCapability).toByteArray, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL)
           } catch {
             case ex: KeeperException if ex.code == KeeperException.Code.NODEEXISTS => // do nothing
           }
         }
 
-        makeNodeAvailable(nodeId)
+        makeNodeAvailable(nodeId, initialCapability)
         clusterNotificationManager ! ClusterNotificationMessages.NodesChanged(currentNodes)
         None
       }
@@ -226,6 +236,25 @@ trait ZooKeeperClusterManagerComponent extends ClusterManagerComponent {
         }
 
         makeNodeUnavailable(nodeId)
+        clusterNotificationManager ! ClusterNotificationMessages.NodesChanged(currentNodes)
+        None
+      }
+    }
+    
+    private def handleSetNodeCapability(nodeId: Int, capability: Long) {
+      log.debug("Handling a SetNodeCapability (%d) message".format(nodeId))
+      
+      doIfConnectedWithZooKeeperWithResponse("a SetNodeCapability message", "setting node capability "+ capability) {  zk =>
+        val path = "%s/%d".format(AVAILABILITY_NODE, nodeId)
+        if (zk.exists(path, false) !=null) {
+          try {
+            zk.setData(path, BigInt(capability).toByteArray, -1)
+          } catch {
+            case ex: KeeperException if ex.code == KeeperException.Code.NONODE => // do nothing
+          }
+        }
+
+        setNodeCapability(nodeId, capability)
         clusterNotificationManager ! ClusterNotificationMessages.NodesChanged(currentNodes)
         None
       }
@@ -288,16 +317,32 @@ trait ZooKeeperClusterManagerComponent extends ClusterManagerComponent {
 
       members.foreach { member =>
         val id = member.toInt
-        currentNodes += (id -> Node(id, zk.getData("%s/%s".format(MEMBERSHIP_NODE, member), false, null), available.contains(member)))
+        currentNodes += {id ->
+                {
+                  val capabilityOption = if (available.contains(member)) {
+                    try {
+                      val cbytes : Array[Byte] = zk.getData("%s/%d".format(AVAILABILITY_NODE, id), false, null)
+                      if (cbytes != null) Some(BigInt(cbytes).longValue) else Some(0L)
+                    } catch {
+                      case ex: KeeperException if ex.code == KeeperException.Code.NONODE => Some(0L)
+                    }
+                  } else None
+                  Node(id, zk.getData("%s/%s".format(MEMBERSHIP_NODE, member), false, null), available.contains(member), capabilityOption)
+                }
+        }
       }
     }
 
-    private def makeNodeAvailable(nodeId: Int) {
-      currentNodes.get(nodeId).foreach { n => if (!n.available) currentNodes.update(n.id, n.copy(available = true)) }
+    private def makeNodeAvailable(nodeId: Int, capability: Long) {
+      currentNodes.get(nodeId).foreach { n => if (!n.available) currentNodes.update(n.id, n.copy(available = true, capability = Some(capability))) }
     }
 
     private def makeNodeUnavailable(nodeId: Int) {
-      currentNodes.get(nodeId).foreach { n => if (n.available) currentNodes.update(n.id, n.copy(available = false)) }
+      currentNodes.get(nodeId).foreach { n => if (n.available) currentNodes.update(n.id, n.copy(available = false, capability = None)) }
+    }
+    
+    private def setNodeCapability(nodeId: Int, capability: Long) {
+      currentNodes.get(nodeId).filter( _.available).map { n => currentNodes.update(n.id, n.copy(capability = Some(capability))) }
     }
 
     private def doIfConnected(what: String)(block: => Unit) {

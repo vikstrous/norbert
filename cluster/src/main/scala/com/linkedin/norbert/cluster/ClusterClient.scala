@@ -170,14 +170,21 @@ trait ClusterClient extends Logging {
   }
 
   /**
+   * Marks a cluster node as online with capability value set to 0L
+   *
+   * @param nodeId  the id of the node to mark available
+   */
+  def markNodeAvailable(nodeId: Int): Unit = markNodeAvailable(nodeId, 0L)
+
+  /**
    * Marks a cluster node as online and available for receiving requests.
    *
    * @param nodeId the id of the node to mark available
    *
    * @throws ClusterDisconnectedException thrown if the cluster is disconnected when the method is called
    */
-  def markNodeAvailable(nodeId: Int): Unit = handleClusterManagerResponse {
-    clusterManager !? ClusterManagerMessages.MarkNodeAvailable(nodeId)
+  def markNodeAvailable(nodeId: Int, initialCapability: Long = 0L): Unit = handleClusterManagerResponse {
+    clusterManager !? ClusterManagerMessages.MarkNodeAvailable(nodeId, initialCapability)
   }
 
   /**
@@ -189,6 +196,20 @@ trait ClusterClient extends Logging {
    */
   def markNodeUnavailable(nodeId: Int): Unit = handleClusterManagerResponse {
     clusterManager !? ClusterManagerMessages.MarkNodeUnavailable(nodeId)
+  }
+
+  /**
+   * Set the capability state for a cluster node.
+   *
+   * @param nodeId the id of the node to represent capablity
+   * @param capability a long with each bit of it representing a different capability of the Node, thus, supporting up
+   * to 64 different capabilities of the Node. This capability then can be used to filter nodes only fulfill a certain
+   * capability level during Node query.
+   *
+   * @throws ClusterDisconnectedException thrown if the clsuter is disconnected when the method is called
+   */
+  def setNodeCapability(nodeId: Int, capability: Long): Unit = handleClusterManagerResponse {
+    clusterManager !? ClusterManagerMessages.SetNodeCapability(nodeId, capability)
   }
 
   /**

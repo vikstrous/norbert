@@ -44,6 +44,12 @@ public class RunNorbertSetup
                     {
                         return endpoints.iterator().next().getNode();
                     }
+
+                    @java.lang.Override
+                    public Node nextNode(Long capability)
+                    {
+                      return endpoints.iterator().next().getNode();
+                    }
                 };
             }
         };

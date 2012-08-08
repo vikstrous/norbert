@@ -21,6 +21,7 @@ import org.specs.Specification
 import org.specs.mock.Mockito
 import cluster._
 import network.common.SampleMessage
+import scala.collection.mutable.MutableList
 
 class NetworkServerSpec extends Specification with Mockito with SampleMessage {
   val networkServer = new NetworkServer with ClusterClientComponent with ClusterIoServerComponent with MessageHandlerRegistryComponent
@@ -28,7 +29,7 @@ class NetworkServerSpec extends Specification with Mockito with SampleMessage {
     val clusterIoServer = mock[ClusterIoServer]
     val clusterClient = mock[ClusterClient]
     val messageHandlerRegistry = mock[MessageHandlerRegistry]
-    val messageExecutor = null
+    val messageExecutor = mock[MessageExecutor]
   }
 
   val node = Node(1, "", false)
@@ -56,6 +57,14 @@ class NetworkServerSpec extends Specification with Mockito with SampleMessage {
       doNothing.when(networkServer.messageHandlerRegistry).registerHandler((ping: Ping) => new Ping)
 
       networkServer.registerHandler((ping : Ping) => new Ping)
+    }
+
+    "add filters with the MessageExcutor" in {
+      val filters = mock[List[Filter]]
+      doNothing.when(networkServer.messageExecutor).addFilters(filters)
+
+      networkServer.addFilters(filters)
+      there was one(networkServer.messageExecutor).addFilters(filters)
     }
 
     "when bind is called" in {
@@ -95,7 +104,7 @@ class NetworkServerSpec extends Specification with Mockito with SampleMessage {
 
         listener.handleClusterEvent(ClusterEvents.Connected(Set()))
 
-        there was one(networkServer.clusterClient).markNodeAvailable(1)
+        there was one(networkServer.clusterClient).markNodeAvailable(1, 0)
       }
 
       "if markAvailable is false, not mark the node available when a Connection message is received" in {
@@ -107,7 +116,7 @@ class NetworkServerSpec extends Specification with Mockito with SampleMessage {
 
         listener.handleClusterEvent(ClusterEvents.Connected(Set()))
 
-        there was no(networkServer.clusterClient).markNodeAvailable(1)
+        there was no(networkServer.clusterClient).markNodeAvailable(1, 0)
       }
     }
 
@@ -128,11 +137,11 @@ class NetworkServerSpec extends Specification with Mockito with SampleMessage {
 
       networkServer.markAvailable
 
-      there was one(networkServer.clusterClient).markNodeAvailable(1)
+      there was one(networkServer.clusterClient).markNodeAvailable(1, 0)
 
       listener.handleClusterEvent(ClusterEvents.Connected(Set()))
 
-      there were two(networkServer.clusterClient).markNodeAvailable(1)
+      there were two(networkServer.clusterClient).markNodeAvailable(1, 0)
     }
 
     "mark the node unavailable and ensure it is not marked available when Connected events are received for markUnavailable" in {
@@ -145,14 +154,14 @@ class NetworkServerSpec extends Specification with Mockito with SampleMessage {
 
       listener.handleClusterEvent(ClusterEvents.Connected(Set()))
 
-      there was one(networkServer.clusterClient).markNodeAvailable(1)
+      there was one(networkServer.clusterClient).markNodeAvailable(1, 0)
 
       networkServer.markUnavailable
 
       listener.handleClusterEvent(ClusterEvents.Connected(Set()))
 
       got {
-        one(networkServer.clusterClient).markNodeAvailable(1)
+        one(networkServer.clusterClient).markNodeAvailable(1, 0)
         one(networkServer.clusterClient).markNodeUnavailable(1)
       }
     }

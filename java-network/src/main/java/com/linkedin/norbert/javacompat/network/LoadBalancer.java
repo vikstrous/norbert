@@ -27,4 +27,12 @@ public interface LoadBalancer {
    * @return the <code>Node</code> to route the next request to or null if there are no <code>Node</code>s available
    */
   Node nextNode();
+
+  /**
+   * Returns the next <code>Node</code> that fulfill the capability a request should be routed to.
+   *
+   * @param capability A Long that representing the minimal capability of the node that's serving the request
+   * @return the <code>Node</code> to route the next request to or null if there are no <code>Node</code>'s available
+   */
+  Node nextNode(Long capability);
 }

@@ -20,45 +20,35 @@ package loadbalancer
 
 import cluster.{Node, InvalidClusterException}
 import common.Endpoint
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
 
 /**
  * This class is intended for applications where there is a mapping from partitions -> servers able to respond to those requests. Requests are round-robined
  * between the partitions
  */
-abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](serveRequestsIfPartitionMissing: Boolean = true) extends PartitionedLoadBalancerFactory[PartitionedId] {
+abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](numPartitions: Int, serveRequestsIfPartitionMissing: Boolean = true) extends PartitionedLoadBalancerFactory[PartitionedId] {
   def newLoadBalancer(endpoints: Set[Endpoint]): PartitionedLoadBalancer[PartitionedId] = new PartitionedLoadBalancer[PartitionedId] with DefaultLoadBalancerHelper {
-    val numPartitions: Int = getNumPartitions(endpoints)
     val partitionToNodeMap = generatePartitionToNodeMap(endpoints, numPartitions, serveRequestsIfPartitionMissing)
 
-    def nextNode(id: PartitionedId) = nodeForPartition(partitionForId(id))
-    /**
-     * Calculates the id of the partition on which the specified <code>Id</code> resides.
-     *
-     * @param id the <code>Id</code> to map to a partition
-     *
-     * @return the id of the partition on which the <code>Id</code> resides
-     */
-    def partitionForId(id: PartitionedId): Int = {
-      calculateHash(id).abs % numPartitions
-    }
+    def nextNode(id: PartitionedId, capability: Option[Long] = None) = nodeForPartition(partitionForId(id), capability)
 
-    def nodesForPartitionedId(id: PartitionedId) = {
-      partitionToNodeMap.getOrElse(partitionForId(id), (Vector.empty[Endpoint], new AtomicInteger(0)))._1.toSet.map
+
+    def nodesForPartitionedId(id: PartitionedId, capability: Option[Long] = None) = {
+      partitionToNodeMap.getOrElse(partitionForId(id), (Vector.empty[Endpoint], new AtomicInteger(0), new Array[AtomicBoolean](0)))._1.filter(_.node.isCapableOf(capability)).toSet.map
       { (endpoint: Endpoint) => endpoint.node }
     }
 
-    def nodesForOneReplica(id: PartitionedId) = {
-      nodesForPartitions(id, partitionToNodeMap)
+    def nodesForOneReplica(id: PartitionedId, capability: Option[Long] = None) = {
+      nodesForPartitions(id, partitionToNodeMap, capability)
     }
 
-    def nodesForPartitions(id: PartitionedId, partitions: Set[Int]) = {
-      nodesForPartitions(id, partitionToNodeMap.filterKeys(partitions contains _))
+    def nodesForPartitions(id: PartitionedId, partitions: Set[Int], capability: Option[Long] = None) = {
+      nodesForPartitions(id, partitionToNodeMap.filterKeys(partitions contains _), capability)
     }
 
-    def nodesForPartitions(id: PartitionedId, partitionToNodeMap: Map[Int, (IndexedSeq[Endpoint], AtomicInteger)]) = {
+    def nodesForPartitions(id: PartitionedId, partitionToNodeMap: Map[Int, (IndexedSeq[Endpoint], AtomicInteger, Array[AtomicBoolean])], capability: Option[Long]) = {
       partitionToNodeMap.keys.foldLeft(Map.empty[Node, Set[Int]]) { (map, partition) =>
-        val nodeOption = nodeForPartition(partition)
+        val nodeOption = nodeForPartition(partition, capability)
         if(nodeOption.isDefined) {
           val n = nodeOption.get
           map + (n -> (map.getOrElse(n, Set.empty[Int]) + partition))
@@ -69,6 +59,16 @@ abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](serveRequest
           throw new InvalidClusterException("Partition %s is unavailable, cannot serve requests.".format(partition))
       }
     }
+  }
+  /**
+   * Calculates the id of the partition on which the specified <code>Id</code> resides.
+   *
+   * @param id the <code>Id</code> to map to a partition
+   *
+   * @return the id of the partition on which the <code>Idrever</code> resides
+   */
+  def partitionForId(id: PartitionedId): Int = {
+    calculateHash(id).abs % numPartitions
   }
 
   /**

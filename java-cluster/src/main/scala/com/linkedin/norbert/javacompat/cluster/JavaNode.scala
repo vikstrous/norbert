@@ -27,11 +27,16 @@ object JavaNode {
       if (node.partitionIds != null) {
         node.partitionIds.foreach {id => s.add(id)}
       }
-      JavaNode(node.id, node.url, node.available, s)
+      JavaNode(node.id, node.url, node.available, s, node.capability)
     }
   }
 }
 
-case class JavaNode(@BeanProperty id: Int, @BeanProperty url: String, @BeanProperty available: Boolean, @BeanProperty partitionIds: java.util.Set[java.lang.Integer]) extends Node {
+case class JavaNode(@BeanProperty id: Int, @BeanProperty url: String, @BeanProperty available: Boolean, @BeanProperty partitionIds: java.util.Set[java.lang.Integer], capability: Option[Long]) extends Node {
   def isAvailable = available
+  def isCapableOf(c: java.lang.Long) : Boolean =
+    capability match {
+      case Some(nc) => (nc & c.longValue) == c.longValue
+      case None => c.longValue == 0L
+    }
 }
