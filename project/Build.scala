@@ -15,7 +15,7 @@ object BuildSettings {
 
   val buildSettings = Defaults.defaultSettings ++ Seq (
     organization := "com.linkedin",
-    version      := "0.6.15",
+    version      := "0.6.18-SNAPSHOT",
     scalaVersion := "2.8.1",
     credentialsSetting,
     publishTo <<= (version) { version: String =>
@@ -86,12 +86,12 @@ object NorbertBuild extends Build {
 
   lazy val examples = Project("examples", file("examples"), settings = buildSettings) dependsOn(network, javaNetwork)
 
-  lazy val root = Project("root", file("."), settings = buildSettings) aggregate(cluster, network, javaCluster, javaNetwork)
+    lazy val root = Project("root", file("."), settings = buildSettings) aggregate(cluster, network, javaCluster, javaNetwork, examples)
 
   lazy val full = {
     // The projects that are packaged in the full distribution.
     val description = SettingKey[String]("description")
-    val projects = Seq(cluster, network, javaCluster, javaNetwork)
+    val projects = Seq(cluster, network, javaCluster, javaNetwork, examples )
 
     val myManagedSources = TaskKey[Seq[Seq[File]]]("my-managed-sources")
     val myUnmanagedSources = TaskKey[Seq[Seq[File]]]("my-unmanaged-sources")
