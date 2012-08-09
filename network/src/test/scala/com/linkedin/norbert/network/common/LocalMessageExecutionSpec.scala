@@ -21,7 +21,7 @@ import org.specs.Specification
 import org.specs.mock.Mockito
 import client.NetworkClient
 import client.loadbalancer.{LoadBalancerFactory, LoadBalancer, LoadBalancerFactoryComponent}
-import server.{MessageExecutorComponent, MessageExecutor, Filter, RequestContext}
+import server._
 import cluster.{Node, ClusterClientComponent, ClusterClient}
 import com.google.protobuf.Message
 import scala.collection.mutable.MutableList

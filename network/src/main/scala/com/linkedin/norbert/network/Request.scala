@@ -17,6 +17,7 @@ package com.linkedin.norbert.network
 
 import java.util.UUID
 import com.linkedin.norbert.cluster.{ClusterException, Node}
+import scala.collection.mutable.Map
 
 object Request {
   def apply[RequestMsg, ResponseMsg](message: RequestMsg, node: Node,
@@ -31,12 +32,15 @@ class Request[RequestMsg, ResponseMsg](val message: RequestMsg, val node: Node,
                                        val callback: Either[Throwable, ResponseMsg] => Unit, val retryAttempt: Int = 0) {
   val id = UUID.randomUUID
   val timestamp = System.currentTimeMillis
+  val headers : Map[String, String] = Map.empty[String, String]
 
   def name: String = {
     inputSerializer.requestName
   }
 
   def requestBytes: Array[Byte] = outputSerializer.requestToBytes(message)
+
+  def addHeader(key: String, value: String) = headers += (key -> value)
 
   def onFailure(exception: Throwable) {
     callback(Left(exception))

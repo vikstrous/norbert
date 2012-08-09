@@ -107,8 +107,10 @@ class ClientChannelHandler(clientName: Option[String],
     message.setRequestIdMsb(request.id.getMostSignificantBits)
     message.setRequestIdLsb(request.id.getLeastSignificantBits)
     message.setMessageName(request.name)
+    request.headers.foreach { header =>
+      message.addHeader(NorbertProtos.NorbertMessage.Header.newBuilder.setKey(header._1).setValue(header._2).build)
+    }
     message.setMessage(ProtoUtils.byteArrayToByteString(request.requestBytes, avoidByteStringCopy))
-
     super.writeRequested(ctx, new DownstreamMessageEvent(e.getChannel, e.getFuture, message.build, e.getRemoteAddress))
   }
 
