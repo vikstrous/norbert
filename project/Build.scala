@@ -18,6 +18,7 @@ object BuildSettings {
     version      := "0.6.19-SNAPSHOT",
     scalaVersion := "2.8.1",
     credentialsSetting,
+    publishArtifact in (Compile, packageDoc) := false,
     publishTo <<= (version) { version: String =>
       if (version.trim.endsWith("SNAPSHOT"))
         Some("Sonatype Nexus Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots")
