@@ -20,8 +20,8 @@ package server
 import org.specs.Specification
 import org.specs.mock.Mockito
 import org.specs.util.WaitFor
-import common.SampleMessage
 import scala.collection.mutable.MutableList
+import common.SampleMessage
 
 class MessageExecutorSpec extends Specification with Mockito with WaitFor with SampleMessage {
   val messageHandlerRegistry = mock[MessageHandlerRegistry]
