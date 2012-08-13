@@ -29,7 +29,7 @@ import client.loadbalancer.{LoadBalancerFactoryComponent, LoadBalancerFactory}
 import cluster.{ClusterClient, ClusterClientComponent}
 import protos.NorbertProtos
 import org.jboss.netty.channel.{ChannelPipelineFactory, Channels}
-import client.{ThreadPoolResponseHandler, ResponseHandlerComponent, NetworkClient, NetworkClientConfig}
+import client.{ThreadPoolResponseHandler, ResponseHandlerComponent, NetworkClient, NetworkClientConfig, NetworkClientComponent}
 import common.{CompositeCanServeRequestStrategy, SimpleBackoffStrategy, BaseNetworkClient}
 import java.util.{Map => JMap}
 import jmx.JMX

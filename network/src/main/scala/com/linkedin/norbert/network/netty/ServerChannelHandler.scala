@@ -20,6 +20,7 @@ package netty
 import org.jboss.netty.channel.group.ChannelGroup
 import org.jboss.netty.channel._
 import server.{MessageExecutor, MessageHandlerRegistry, RequestContext => NorbertRequestContext}
+import common.CachedNetworkStatistics
 import protos.NorbertProtos
 import logging.Logging
 import java.util.UUID
@@ -29,7 +30,6 @@ import jmx.{FinishedRequestTimeTracker, JMX}
 import java.lang.String
 import com.google.protobuf.{ByteString}
 import norbertutils._
-import common.CachedNetworkStatistics
 import util.ProtoUtils
 
 
@@ -65,7 +65,11 @@ class ServerFilterChannelHandler(messageExecutor: MessageExecutor) extends Simpl
   override def handleUpstream(ctx: ChannelHandlerContext, e: ChannelEvent) {
     if (e.isInstanceOf[MessageEvent]) {
       val (context, norbertMessage) = e.asInstanceOf[MessageEvent].getMessage.asInstanceOf[(RequestContext, NorbertProtos.NorbertMessage)]
-      messageExecutor.filters.foreach { filter => filter.asInstanceOf[Filter].onMessage(norbertMessage, context) }
+      messageExecutor.filters.foreach { filter =>
+        filter match {
+          case f : NettyServerFilter => f.onMessage(norbertMessage, context)
+        }
+      }
     }
     super.handleUpstream(ctx, e)
   }
@@ -73,7 +77,11 @@ class ServerFilterChannelHandler(messageExecutor: MessageExecutor) extends Simpl
   override def handleDownstream(ctx: ChannelHandlerContext, e: ChannelEvent) {
     if (e.isInstanceOf[MessageEvent]) {
       val (context, norbertMessage) = e.asInstanceOf[MessageEvent].getMessage.asInstanceOf[(RequestContext, NorbertProtos.NorbertMessage)]
-      messageExecutor.filters.foreach { filter => filter.asInstanceOf[Filter].postMessage(norbertMessage, context) }
+      messageExecutor.filters.foreach { filter =>
+        filter match {
+          case f :NettyServerFilter => f.postMessage(norbertMessage, context)
+        }
+      }
     }
     super.handleDownstream(ctx, e)
   }

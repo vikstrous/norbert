@@ -24,21 +24,15 @@ import actors.DaemonActor
 import java.util.concurrent.atomic.AtomicInteger
 import norbertutils.{SystemClock, NamedPoolThreadFactory}
 import java.util.concurrent._
-import common.{CachedNetworkStatistics}
 import cluster.ClusterClientComponent
 import scala.collection.mutable.MutableList
+import common.CachedNetworkStatistics
 
 /**
  * A component which submits incoming messages to their associated message handler.
  */
 trait MessageExecutorComponent {
   val messageExecutor: MessageExecutor
-}
-
-trait Filter {
-  def onRequest(request: Any, context: RequestContext): Unit
-  def onResponse(response: Any, context: RequestContext): Unit
-  def onError(error: Exception, context: RequestContext): Unit
 }
 
 trait MessageExecutor {

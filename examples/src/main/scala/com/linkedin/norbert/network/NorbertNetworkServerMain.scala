@@ -17,13 +17,13 @@ package com.linkedin.norbert
 package network
 
 
-import netty.{RequestContext => NettyRequestContext, NetworkServerConfig}
+import server.{RequestContext, NetworkServer}
+import netty.{RequestContext => NettyRequestContext, NetworkServerConfig, NettyServerFilter}
 import org.jboss.netty.logging.{InternalLoggerFactory, Log4JLoggerFactory}
 import com.google.protobuf.Message
 import protos.NorbertExampleProtos
 import cluster.ClusterClient
 import norbertutils._
-import server.{RequestContext, NetworkServer}
 import network.NorbertNetworkServerMain.LogFilter
 import protos.NorbertProtos.NorbertMessage
 
@@ -59,7 +59,7 @@ object NorbertNetworkServerMain {
     Pong(System.currentTimeMillis)
   }
 
-  class LogFilter extends netty.Filter  {
+  class LogFilter extends NettyServerFilter  {
     val clock = SystemClock
     def onRequest(request: Any, context: RequestContext)
     { context.attributes += ("START_TIMER" -> clock.getCurrentTime) }

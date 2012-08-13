@@ -22,6 +22,7 @@ import java.util.concurrent.Future
 import cluster._
 import logging.Logging
 import jmx.JMX
+import client.Filter
 
 trait BaseNetworkClient extends Logging {
   this: ClusterClientComponent with ClusterIoClientComponent =>
@@ -36,6 +37,8 @@ trait BaseNetworkClient extends Logging {
   protected val shutdownSwitch = new AtomicBoolean
 
   private var listenerKey: ClusterListenerKey = _
+  
+  private var filters : List[Filter] = List.empty[Filter]
 
   def start {
     if (startedSwitch.compareAndSet(false, true)) {
@@ -144,8 +147,11 @@ trait BaseNetworkClient extends Logging {
 
   protected def updateLoadBalancer(nodes: Set[Endpoint]): Unit
 
+  def addFilters(clientFilters: List[Filter]) = { filters = clientFilters }
+  
   protected def doSendRequest[RequestMsg, ResponseMsg](requestCtx: Request[RequestMsg, ResponseMsg])
   (implicit is: InputSerializer[RequestMsg, ResponseMsg], os: OutputSerializer[RequestMsg, ResponseMsg]): Unit = {
+    filters.foreach { filter => filter.onRequest(requestCtx) }
     clusterIoClient.sendMessage(requestCtx.node, requestCtx)
   }
 
