@@ -20,6 +20,7 @@ package netty
 import org.jboss.netty.bootstrap.ClientBootstrap
 import org.jboss.netty.channel.group.{ChannelGroup, DefaultChannelGroup}
 import org.jboss.netty.channel.{ChannelFutureListener, ChannelFuture, Channel}
+import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder
 import java.util.concurrent.{TimeoutException, ArrayBlockingQueue, LinkedBlockingQueue}
 import java.net.InetSocketAddress
 import jmx.JMX.MBean
@@ -104,7 +105,18 @@ class ChannelPool(address: InetSocketAddress, maxConnections: Int, openTimeoutMi
       }
     }
 
-    pool.offer(channel)
+    if (isFirstWriteToChannel) pool.offer(channel)
+    else {
+      val  pipeline = channel.getPipeline
+      try {
+        pipeline.remove("frameDecoder")
+        pipeline.addBefore("protobufDecoder", "frameDecoder", new LengthFieldBasedFrameDecoder(Int.MaxValue, 0, 4, 0, 4))
+        pool.offer(channel)
+      } catch {
+        case e: Exception => log.warn("error while replacing frameDecoder, discarding channel")
+      }
+    }
+
   }
 
   private def checkoutChannel: Option[Channel] = {

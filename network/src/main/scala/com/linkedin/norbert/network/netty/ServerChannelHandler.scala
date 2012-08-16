@@ -65,9 +65,9 @@ class ServerFilterChannelHandler(messageExecutor: MessageExecutor) extends Simpl
   override def handleUpstream(ctx: ChannelHandlerContext, e: ChannelEvent) {
     if (e.isInstanceOf[MessageEvent]) {
       val (context, norbertMessage) = e.asInstanceOf[MessageEvent].getMessage.asInstanceOf[(RequestContext, NorbertProtos.NorbertMessage)]
-      messageExecutor.filters.foreach { filter =>
+      messageExecutor.filters.reverse.foreach { filter =>
         filter match {
-          case f : NettyServerFilter => f.onMessage(norbertMessage, context)
+          case f : NettyServerFilter => continueOnError(f.onMessage(norbertMessage, context))
         }
       }
     }
@@ -79,7 +79,7 @@ class ServerFilterChannelHandler(messageExecutor: MessageExecutor) extends Simpl
       val (context, norbertMessage) = e.asInstanceOf[MessageEvent].getMessage.asInstanceOf[(RequestContext, NorbertProtos.NorbertMessage)]
       messageExecutor.filters.foreach { filter =>
         filter match {
-          case f :NettyServerFilter => f.postMessage(norbertMessage, context)
+          case f :NettyServerFilter => continueOnError(f.postMessage(norbertMessage, context))
         }
       }
     }

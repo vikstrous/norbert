@@ -134,13 +134,13 @@ class MessageExecutorSpec extends Specification with Mockito with WaitFor with S
       there was one(filter2).onResponse(request, requestContext) then one(filter1).onResponse(request, requestContext) orderedBy(filter2, filter1)
     }
 
-    "filters are executed when handler return null" in {
+    "filters are not executed when handler return null" in {
       messageHandlerRegistry.handlerFor(request) returns nullHandler _
       messageExecutor.executeMessage(request, handler _, Some(requestContext))
 
       waitFor(5.ms)
       there was one(filter1).onRequest(request, requestContext) then one(filter2).onRequest(request, requestContext) orderedBy(filter1, filter2)
-      there was one(filter2).onResponse(null, requestContext) then one(filter1).onResponse(null, requestContext) orderedBy(filter2, filter1)
+      there was no(filter2).onResponse(null, requestContext) then no(filter1).onResponse(null, requestContext)
     }
 
     "filters are executed when handler throws an exception" in {
@@ -154,14 +154,16 @@ class MessageExecutorSpec extends Specification with Mockito with WaitFor with S
       there was no(filter2).onResponse(request, requestContext)
     }
 
-    "filters are not executed when message is not registered" in {
+    "filters are executed when message is not registered" in {
       val ie = new InvalidMessageException("")
       messageHandlerRegistry.handlerFor(request) throws ie
       messageExecutor.executeMessage(request, handler _, Some(requestContext))
 
       waitFor(5.ms)
-      there was no(filter1).onError(ie, requestContext)
-      there was no(filter2).onError(ie, requestContext)
+      there was one(filter1).onRequest(request, requestContext) then one(filter2).onRequest(request, requestContext) orderedBy(filter1, filter2)
+      there was one(filter2).onError(ie, requestContext) then one(filter1).onError(ie, requestContext) orderedBy(filter2, filter1)
+      there was no(filter1).onResponse(request, requestContext)
+      there was no(filter2).onResponse(request, requestContext)
     }
 
     "filters are added via addFilters" in {
