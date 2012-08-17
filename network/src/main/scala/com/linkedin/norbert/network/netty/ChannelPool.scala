@@ -112,9 +112,8 @@ class ChannelPool(address: InetSocketAddress, maxConnections: Int, openTimeoutMi
       }
     }
 
-    if(!isFirstWriteToChannel && channelBufferRecycleCounter.decrementAndGet <=0 )
+    if(!isFirstWriteToChannel && ((channelBufferRecycleCounter.incrementAndGet % channelBufferRecycleFrequence) == 0))
     {
-      channelBufferRecycleCounter.set(channelBufferRecycleFrequence)
       val  pipeline = channel.getPipeline
       try {
         pipeline.remove("frameDecoder")
