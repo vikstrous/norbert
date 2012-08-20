@@ -24,9 +24,11 @@ import actors.DaemonActor
 import java.util.concurrent.atomic.AtomicInteger
 import norbertutils.{SystemClock, NamedPoolThreadFactory}
 import java.util.concurrent._
-import cluster.ClusterClientComponent
 import scala.collection.mutable.MutableList
 import common.CachedNetworkStatistics
+import util.ProtoUtils
+import norbertutils._
+import cluster.{ClusterDisconnectedException, ClusterClientComponent}
 
 /**
  * A component which submits incoming messages to their associated message handler.
@@ -127,16 +129,14 @@ class ThreadPoolMessageExecutor(serviceName: String,
 
         val response: Option[Either[Exception, ResponseMsg]] =
         try {
+          filters.foreach(filter => continueOnError(filter.onRequest(request, context.getOrElse(null))))
           val handler = messageHandlerRegistry.handlerFor(request)
           try {
-            filters.foreach(filter => filter.onRequest(request, context.getOrElse(null)))
             val response = handler(request)
-            filters.reverse.foreach(filter => filter.onResponse(response, context.getOrElse(null)))
             if(response == null) None else Some(Right(response))
           } catch {
             case ex: Exception =>
               log.error(ex, "Message handler threw an exception while processing message")
-              filters.reverse.foreach(filter => filter.onError(ex, context.getOrElse(null)))
               Some(Left(ex))
           }
         } catch {
@@ -144,12 +144,17 @@ class ThreadPoolMessageExecutor(serviceName: String,
             log.error(ex, "Received an invalid message: %s".format(request))
             Some(Left(ex))
 
-
           case ex: Exception =>
             log.error(ex, "Unexpected error while handling message: %s".format(request))
             Some(Left(ex))
         }
-        response.foreach(callback)
+        response.foreach { (res) =>
+          callback(res)
+          res match {
+            case Left(ex) => filters.reverse.foreach(filter => continueOnError(filter.onError(ex, context.getOrElse(null))))
+            case Right(responseMsg) =>  filters.reverse.foreach(filter => continueOnError(filter.onResponse(responseMsg, context.getOrElse(null))))
+          }
+        }
       }
     }
   }
