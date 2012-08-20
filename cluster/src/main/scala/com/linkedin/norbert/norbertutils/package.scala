@@ -84,4 +84,13 @@ package object norbertutils {
     // Linearly Interpolate between the two
     (idx - lIdx) * n.toDouble(values(rIdx)) + (rIdx - idx) * n.toDouble(values(lIdx))
   }
+
+  def continueOnError(block: => Unit): Unit = {
+    try {
+      block
+    } catch
+    {
+      case e : Exception => // nothing
+    }
+  }
 }

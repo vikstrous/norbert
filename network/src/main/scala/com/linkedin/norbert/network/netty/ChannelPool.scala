@@ -20,6 +20,7 @@ package netty
 import org.jboss.netty.bootstrap.ClientBootstrap
 import org.jboss.netty.channel.group.{ChannelGroup, DefaultChannelGroup}
 import org.jboss.netty.channel.{ChannelFutureListener, ChannelFuture, Channel}
+import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder
 import java.util.concurrent.{TimeoutException, ArrayBlockingQueue, LinkedBlockingQueue}
 import java.net.InetSocketAddress
 import jmx.JMX.MBean
@@ -58,8 +59,11 @@ class ChannelPool(address: InetSocketAddress, maxConnections: Int, openTimeoutMi
   private val poolSize = new AtomicInteger(0)
   private val closed = new AtomicBoolean
   private val requestsSent = new AtomicInteger(0)
+  private var channelBufferRecycleFrequence = 1000
+  private val channelBufferRecycleCounter = new AtomicInteger(channelBufferRecycleFrequence)
 
   private val jmxHandle = JMX.register(new MBean(classOf[ChannelPoolMBean], "address=%s,port=%d".format(address.getHostName, address.getPort)) with ChannelPoolMBean {
+    import scala.math._
     def getWriteQueueSize = waitingWrites.size
 
     def getOpenChannels = poolSize.get
@@ -67,6 +71,10 @@ class ChannelPool(address: InetSocketAddress, maxConnections: Int, openTimeoutMi
     def getMaxChannels = maxConnections
 
     def getNumberRequestsSent = requestsSent.get.abs
+
+    def getChannelBufferRecycleFrequence = channelBufferRecycleFrequence
+
+    def setChannelBufferRecycleFrequence(noReqsPerRecycle: Int) {channelBufferRecycleFrequence = max(noReqsPerRecycle, 10) }
   })
 
   def sendRequest[RequestMsg, ResponseMsg](request: Request[RequestMsg, ResponseMsg]): Unit = if (closed.get) {
@@ -104,7 +112,20 @@ class ChannelPool(address: InetSocketAddress, maxConnections: Int, openTimeoutMi
       }
     }
 
-    pool.offer(channel)
+    if(!isFirstWriteToChannel && ((channelBufferRecycleCounter.incrementAndGet % channelBufferRecycleFrequence) == 0))
+    {
+      val  pipeline = channel.getPipeline
+      try {
+        pipeline.remove("frameDecoder")
+        pipeline.addBefore("protobufDecoder", "frameDecoder", new LengthFieldBasedFrameDecoder(Int.MaxValue, 0, 4, 0, 4))
+        pool.offer(channel)
+      } catch {
+        case e: Exception => log.warn("error while replacing frameDecoder, discarding channel")
+      }
+    } else
+    {
+      pool.offer(channel)
+    }
   }
 
   private def checkoutChannel: Option[Channel] = {
@@ -178,4 +199,6 @@ trait ChannelPoolMBean {
   def getMaxChannels: Int
   def getWriteQueueSize: Int
   def getNumberRequestsSent: Int
+  def getChannelBufferRecycleFrequence: Int
+  def setChannelBufferRecycleFrequence(noReqsPerRecycle: Int): Unit
 }
