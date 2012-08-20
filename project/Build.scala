@@ -15,7 +15,7 @@ object BuildSettings {
 
   val buildSettings = Defaults.defaultSettings ++ Seq (
     organization := "com.linkedin",
-    version      := "0.6.19-SNAPSHOT",
+    version      := "0.6.20",
     scalaVersion := "2.8.1",
     credentialsSetting,
     publishArtifact in (Compile, packageDoc) := false,
@@ -175,8 +175,14 @@ object NorbertBuild extends Build {
             <developer>
               <id>jhartman</id>
               <name>Joshua Hartman</name>
-              <url>http://http://twitter.com/hartmanster</url>
+              <url>http://twitter.com/hartmanster</url>
             </developer>
+            <developer>
+              <id>rwang</id>
+              <name>Rui Wang</name>
+              <url>http://www.linkedin.com/profile/view?id=147539</url>
+            </developer>
+
           </developers>
         )},
 
