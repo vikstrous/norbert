@@ -59,7 +59,8 @@ class ChannelPool(address: InetSocketAddress, maxConnections: Int, openTimeoutMi
   private val poolSize = new AtomicInteger(0)
   private val closed = new AtomicBoolean
   private val requestsSent = new AtomicInteger(0)
-  private var channelBufferRecycleFrequence = 1000
+  private val lock = new java.util.concurrent.locks.ReentrantReadWriteLock(true)
+  private var channelBufferRecycleFrequence = 10000
   private val channelBufferRecycleCounter = new AtomicInteger(channelBufferRecycleFrequence)
 
   private val jmxHandle = JMX.register(new MBean(classOf[ChannelPoolMBean], "address=%s,port=%d".format(address.getHostName, address.getPort)) with ChannelPoolMBean {
@@ -112,40 +113,64 @@ class ChannelPool(address: InetSocketAddress, maxConnections: Int, openTimeoutMi
       }
     }
 
-    if(!isFirstWriteToChannel && ((channelBufferRecycleCounter.incrementAndGet % channelBufferRecycleFrequence) == 0))
-    {
-      val  pipeline = channel.getPipeline
-      try {
-        pipeline.remove("frameDecoder")
-        pipeline.addBefore("protobufDecoder", "frameDecoder", new LengthFieldBasedFrameDecoder(Int.MaxValue, 0, 4, 0, 4))
-        pool.offer(channel)
-      } catch {
-        case e: Exception => log.warn("error while replacing frameDecoder, discarding channel")
-      }
-    } else
-    {
-      pool.offer(channel)
+
+    if(!isFirstWriteToChannel && ((channelBufferRecycleCounter.incrementAndGet % channelBufferRecycleFrequence) == 0)) {
+      cleanFrameDecoders
     }
+    
+    pool.offer(channel)
+  }
+
+  /**
+   * Cleans the frame decoders in the channel pool for garbage collection / resource utilization reasons.
+   * We acquire the write lock at this point so that we can block all readers from taking from the queue. It would
+   * be dangerous if we modified their frame decoder after they pull from the queue. It should be possible to 
+   * make this an even more fine-grained lock if contention is absolutely an issue, but cleaning the frame decoders
+   * is something that should be done rarely and shouldn't take long.
+   */
+  private def cleanFrameDecoders = {
+    lock.writeLock.lock()
+    try {
+      import scala.collection.JavaConversions._
+      for(channel <- pool.iterator()) {
+        val pipeline = channel.getPipeline
+        try {
+          pipeline.remove("frameDecoder")
+          pipeline.addBefore("protobufDecoder", "frameDecoder", new LengthFieldBasedFrameDecoder(Int.MaxValue, 0, 4, 0, 4))
+        } catch {
+          case e: Exception => log.warn("Error while replacing frameDecoder, continuing")
+        }
+      }
+    } catch {
+      case ex: Exception => log.warn("Exception while cleaning the frame decoders, ignoring")
+    }
+    lock.writeLock.unlock()
   }
 
   private def checkoutChannel: Option[Channel] = {
-    var found = false
+    lock.readLock().lock();
+
     var channel: Channel = null
+    try {
+      var found = false
+      while (!pool.isEmpty && !found) {
+        pool.poll match {
+          case null => // do nothing
 
-    while (!pool.isEmpty && !found) {
-      pool.poll match {
-        case null => // do nothing
-
-        case c =>
-          if (c.isConnected) {
-            channel = c
-            found = true
-          } else {
-            poolSize.decrementAndGet
-          }
+          case c =>
+            if (c.isConnected) {
+              channel = c
+              found = true
+            } else {
+              poolSize.decrementAndGet
+            }
+        }
       }
+    } catch {
+      case ex: Exception => log.error("Error checking out channel")
     }
-
+    
+    lock.readLock().unlock();
     Option(channel)
   }
 
