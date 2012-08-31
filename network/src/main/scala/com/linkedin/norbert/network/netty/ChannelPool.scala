@@ -28,13 +28,17 @@ import jmx.JMX
 import logging.Logging
 import cluster.{Node, ClusterClient}
 import java.util.concurrent.atomic.{AtomicLong, AtomicBoolean, AtomicInteger}
-import norbertutils.{SystemClock}
+import norbertutils.{Clock, SystemClock}
 import java.io.IOException
 import common.{BackoffStrategy, SimpleBackoffStrategy}
+import java.util
 
 class ChannelPoolClosedException extends Exception
 
-class ChannelPoolFactory(maxConnections: Int, openTimeoutMillis: Int, writeTimeoutMillis: Int, bootstrap: ClientBootstrap, errorStrategy: Option[BackoffStrategy]) {
+class ChannelPoolFactory(maxConnections: Int, openTimeoutMillis: Int, writeTimeoutMillis: Int,
+                         bootstrap: ClientBootstrap,
+                         errorStrategy: Option[BackoffStrategy],
+                         closeChannelTimeMillis: Long) {
 
   def newChannelPool(address: InetSocketAddress): ChannelPool = {
     val group = new DefaultChannelGroup("norbert-client [%s]".format(address))
@@ -44,7 +48,9 @@ class ChannelPoolFactory(maxConnections: Int, openTimeoutMillis: Int, writeTimeo
       writeTimeoutMillis = writeTimeoutMillis,
       bootstrap = bootstrap,
       channelGroup = group,
-      errorStrategy = errorStrategy)
+      closeChannelTimeMillis = closeChannelTimeMillis,
+      errorStrategy = errorStrategy,
+      clock = SystemClock)
   }
 
   def shutdown: Unit = {
@@ -52,16 +58,25 @@ class ChannelPoolFactory(maxConnections: Int, openTimeoutMillis: Int, writeTimeo
   }
 }
 
-class ChannelPool(address: InetSocketAddress, maxConnections: Int, openTimeoutMillis: Int, writeTimeoutMillis: Int, bootstrap: ClientBootstrap,
-    channelGroup: ChannelGroup, val errorStrategy: Option[BackoffStrategy]) extends Logging {
-  private val pool = new ArrayBlockingQueue[Channel](maxConnections)
+class ChannelPool(address: InetSocketAddress, maxConnections: Int, openTimeoutMillis: Int, writeTimeoutMillis: Int,
+                  bootstrap: ClientBootstrap,
+                  channelGroup: ChannelGroup,
+                  closeChannelTimeMillis: Long,
+                  val errorStrategy: Option[BackoffStrategy],
+                  clock: Clock) extends Logging {
+
+  case class PoolEntry(channel: Channel, creationTime: Long) {
+    def age = System.currentTimeMillis() - creationTime
+
+    def isFresh(closeChannelTimeMillis: Long) = closeChannelTimeMillis > 0 && age < closeChannelTimeMillis
+  }
+
+  private val pool = new ArrayBlockingQueue[PoolEntry](maxConnections)
   private val waitingWrites = new LinkedBlockingQueue[Request[_, _]]
   private val poolSize = new AtomicInteger(0)
   private val closed = new AtomicBoolean
   private val requestsSent = new AtomicInteger(0)
   private val lock = new java.util.concurrent.locks.ReentrantReadWriteLock(true)
-  private var channelBufferRecycleFrequence = 10000
-  private val channelBufferRecycleCounter = new AtomicInteger(channelBufferRecycleFrequence)
 
   private val jmxHandle = JMX.register(new MBean(classOf[ChannelPoolMBean], "address=%s,port=%d".format(address.getHostName, address.getPort)) with ChannelPoolMBean {
     import scala.math._
@@ -72,19 +87,15 @@ class ChannelPool(address: InetSocketAddress, maxConnections: Int, openTimeoutMi
     def getMaxChannels = maxConnections
 
     def getNumberRequestsSent = requestsSent.get.abs
-
-    def getChannelBufferRecycleFrequence = channelBufferRecycleFrequence
-
-    def setChannelBufferRecycleFrequence(noReqsPerRecycle: Int) {channelBufferRecycleFrequence = max(noReqsPerRecycle, 10) }
   })
 
   def sendRequest[RequestMsg, ResponseMsg](request: Request[RequestMsg, ResponseMsg]): Unit = if (closed.get) {
     throw new ChannelPoolClosedException
   } else {
     checkoutChannel match {
-      case Some(channel) =>
-        writeRequestToChannel(request, channel)
-        checkinChannel(channel)
+      case Some(poolEntry) =>
+        writeRequestToChannel(request, poolEntry.channel)
+        checkinChannel(poolEntry)
 
       case None =>
         waitingWrites.offer(request)
@@ -99,7 +110,7 @@ class ChannelPool(address: InetSocketAddress, maxConnections: Int, openTimeoutMi
     }
   }
 
-  private def checkinChannel(channel: Channel, isFirstWriteToChannel: Boolean = false) {
+  private def checkinChannel(poolEntry: PoolEntry, isFirstWriteToChannel: Boolean = false) {
     while (!waitingWrites.isEmpty) {
       waitingWrites.poll match {
         case null => // do nothing
@@ -107,71 +118,35 @@ class ChannelPool(address: InetSocketAddress, maxConnections: Int, openTimeoutMi
         case request =>
           val timeout = if (isFirstWriteToChannel) writeTimeoutMillis + openTimeoutMillis else writeTimeoutMillis
           if((System.currentTimeMillis - request.timestamp) < timeout)
-            writeRequestToChannel(request, channel)
+            writeRequestToChannel(request, poolEntry.channel)
           else
             request.onFailure(new TimeoutException("Timed out while waiting to write"))
       }
     }
 
+    if(poolEntry.isFresh(closeChannelTimeMillis))
+      pool.offer(poolEntry)
 
-    if(!isFirstWriteToChannel && ((channelBufferRecycleCounter.incrementAndGet % channelBufferRecycleFrequence) == 0)) {
-      cleanFrameDecoders
-    }
-    
-    pool.offer(channel)
   }
 
-  /**
-   * Cleans the frame decoders in the channel pool for garbage collection / resource utilization reasons.
-   * We acquire the write lock at this point so that we can block all readers from taking from the queue. It would
-   * be dangerous if we modified their frame decoder after they pull from the queue. It should be possible to 
-   * make this an even more fine-grained lock if contention is absolutely an issue, but cleaning the frame decoders
-   * is something that should be done rarely and shouldn't take long.
-   */
-  private def cleanFrameDecoders = {
-    lock.writeLock.lock()
-    try {
-      import scala.collection.JavaConversions._
-      for(channel <- pool.iterator()) {
-        val pipeline = channel.getPipeline
-        try {
-          pipeline.remove("frameDecoder")
-          pipeline.addBefore("protobufDecoder", "frameDecoder", new LengthFieldBasedFrameDecoder(Int.MaxValue, 0, 4, 0, 4))
-        } catch {
-          case e: Exception => log.warn("Error while replacing frameDecoder, continuing")
-        }
+  private def checkoutChannel: Option[PoolEntry] = {
+    var poolEntry: PoolEntry = null
+    var found = false
+    while (!pool.isEmpty && !found) {
+      pool.poll match {
+        case null => // do nothing
+
+        case pe =>
+          if (pe.channel.isConnected && pe.isFresh(closeChannelTimeMillis)) {
+            poolEntry = pe
+            found = true
+          } else {
+            poolSize.decrementAndGet
+          }
       }
-    } catch {
-      case ex: Exception => log.warn("Exception while cleaning the frame decoders, ignoring")
     }
-    lock.writeLock.unlock()
-  }
 
-  private def checkoutChannel: Option[Channel] = {
-    lock.readLock().lock();
-
-    var channel: Channel = null
-    try {
-      var found = false
-      while (!pool.isEmpty && !found) {
-        pool.poll match {
-          case null => // do nothing
-
-          case c =>
-            if (c.isConnected) {
-              channel = c
-              found = true
-            } else {
-              poolSize.decrementAndGet
-            }
-        }
-      }
-    } catch {
-      case ex: Exception => log.error("Error checking out channel")
-    }
-    
-    lock.readLock().unlock();
-    Option(channel)
+    Option(poolEntry)
   }
 
   private def openChannel(request: Request[_, _]) {
@@ -188,7 +163,9 @@ class ChannelPool(address: InetSocketAddress, maxConnections: Int, openTimeoutMi
             log.debug("Opened a channel to: %s".format(address))
 
             channelGroup.add(channel)
-            checkinChannel(channel, isFirstWriteToChannel = true)
+
+            val poolEntry = PoolEntry(channel, System.currentTimeMillis())
+            checkinChannel(poolEntry, isFirstWriteToChannel = true)
           } else {
             log.error(openFuture.getCause, "Error when opening channel to: %s, marking offline".format(address))
             errorStrategy.foreach(_.notifyFailure(request.node))
@@ -224,6 +201,4 @@ trait ChannelPoolMBean {
   def getMaxChannels: Int
   def getWriteQueueSize: Int
   def getNumberRequestsSent: Int
-  def getChannelBufferRecycleFrequence: Int
-  def setChannelBufferRecycleFrequence(noReqsPerRecycle: Int): Unit
 }

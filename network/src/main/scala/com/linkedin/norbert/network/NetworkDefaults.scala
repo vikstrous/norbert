@@ -47,6 +47,11 @@ object NetworkDefaults {
   val STALE_REQUEST_TIMEOUT_MINS = 1
 
   /**
+   * How long to keep a channel alive before we'll toss it away
+   */
+  val CLOSE_CHANNEL_TIMEOUT_MILLIS = 30000L
+
+  /**
    * The amount of time before a request is considered "timed out" by the processing queue. If for some reason (perhaps a GC), when the request
    * is pulled from the queue and has been sitting in the queue for longer than this time, a HeavyLoadException is thrown to the client, signalling a throttle.
    */
