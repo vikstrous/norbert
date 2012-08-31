@@ -126,7 +126,8 @@ class ChannelPool(address: InetSocketAddress, maxConnections: Int, openTimeoutMi
 
     if(poolEntry.isFresh(closeChannelTimeMillis))
       pool.offer(poolEntry)
-
+    else
+      poolEntry.channel.close()
   }
 
   private def checkoutChannel: Option[PoolEntry] = {
@@ -137,9 +138,13 @@ class ChannelPool(address: InetSocketAddress, maxConnections: Int, openTimeoutMi
         case null => // do nothing
 
         case pe =>
-          if (pe.channel.isConnected && pe.isFresh(closeChannelTimeMillis)) {
-            poolEntry = pe
-            found = true
+          if (pe.channel.isConnected) {
+            if(pe.isFresh(closeChannelTimeMillis)) {
+              poolEntry = pe
+              found = true
+            } else {
+              pe.channel.close()
+            }
           } else {
             poolSize.decrementAndGet
           }
