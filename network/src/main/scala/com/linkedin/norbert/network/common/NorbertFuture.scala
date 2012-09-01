@@ -99,21 +99,25 @@ case class TimeoutIterator[ResponseMsg](inner: ResponseIterator[ResponseMsg], ti
 
   def next: ResponseMsg = {
     val before = System.currentTimeMillis
-    val res = inner.next(timeLeft.get, TimeUnit.MILLISECONDS)
-    val time = (System.currentTimeMillis - before).asInstanceOf[Int]
 
-    timeLeft.addAndGet(-time)
-    res
+    try {
+      return inner.next(timeLeft.get, TimeUnit.MILLISECONDS)
+    } finally {
+      val time = (System.currentTimeMillis - before).asInstanceOf[Int]
+      timeLeft.addAndGet(-time)
+    }
   }
 
   def next(t: Long, unit: TimeUnit): ResponseMsg = {
     val before = System.currentTimeMillis
     val methodTimeout = unit.toMillis(t)
-    val res = inner.next(math.min(methodTimeout, timeLeft.get), TimeUnit.MILLISECONDS)
-    val time = (System.currentTimeMillis - before).asInstanceOf[Int]
 
-    timeLeft.addAndGet(-time)
-    res
+    try  {
+      return inner.next(math.min(methodTimeout, timeLeft.get), TimeUnit.MILLISECONDS)
+    } finally {
+      val time = (System.currentTimeMillis - before).asInstanceOf[Int]
+      timeLeft.addAndGet(-time)
+    }
   }
 }
 

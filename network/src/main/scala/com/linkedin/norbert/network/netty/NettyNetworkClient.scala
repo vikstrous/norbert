@@ -115,6 +115,7 @@ abstract class BaseNettyNetworkClient(clientConfig: NetworkClientConfig) extends
     openTimeoutMillis = clientConfig.connectTimeoutMillis,
     writeTimeoutMillis = clientConfig.writeTimeoutMillis,
     bootstrap = bootstrap,
+    closeChannelTimeMillis = clientConfig.closeChannelTimeMillis,
     errorStrategy = Some(channelPoolStrategy))
 
   val clusterIoClient = new NettyClusterIoClient(channelPoolFactory, strategy)

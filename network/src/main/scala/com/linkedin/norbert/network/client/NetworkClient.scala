@@ -34,8 +34,10 @@ class NetworkClientConfig {
   var connectTimeoutMillis = NetworkDefaults.CONNECT_TIMEOUT_MILLIS
   var writeTimeoutMillis = NetworkDefaults.WRITE_TIMEOUT_MILLIS
   var maxConnectionsPerNode = NetworkDefaults.MAX_CONNECTIONS_PER_NODE
+
   var staleRequestTimeoutMins = NetworkDefaults.STALE_REQUEST_TIMEOUT_MINS
   var staleRequestCleanupFrequenceMins = NetworkDefaults.STALE_REQUEST_CLEANUP_FREQUENCY_MINS
+  var closeChannelTimeMillis = NetworkDefaults.CLOSE_CHANNEL_TIMEOUT_MILLIS
 
   var requestStatisticsWindow = NetworkDefaults.REQUEST_STATISTICS_WINDOW
 

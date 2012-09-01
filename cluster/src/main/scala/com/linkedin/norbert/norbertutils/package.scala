@@ -45,9 +45,11 @@ package object norbertutils {
   def atomicCreateIfAbsent[K, V](map: ConcurrentMap[K, V], key: K)(fn: K => V): V = {
     val oldValue = map.get(key)
     if(oldValue == null) {
-      val newValue = fn(key)
-      map.putIfAbsent(key, newValue)
-      map.get(key)
+      map.synchronized {
+        val newValue = fn(key)
+        map.putIfAbsent(key, newValue)
+        map.get(key)
+      }
     } else {
       oldValue
     }

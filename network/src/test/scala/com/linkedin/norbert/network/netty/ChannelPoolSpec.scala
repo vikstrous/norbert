@@ -25,12 +25,15 @@ import org.jboss.netty.channel.{Channel, ChannelFutureListener, ChannelFuture}
 import com.google.protobuf.Message
 import java.util.concurrent.{TimeoutException, TimeUnit}
 import java.net.InetSocketAddress
+import norbertutils.MockClock
 
 class ChannelPoolSpec extends Specification with Mockito {
   val channelGroup = mock[ChannelGroup]
   val bootstrap = mock[ClientBootstrap]
   val address = new InetSocketAddress("localhost", 31313)
-  val channelPool = new ChannelPool(address, 1, 100, 100, bootstrap, channelGroup, None)
+
+  val channelPool = new ChannelPool(address, 1, 100, 100, bootstrap, channelGroup,
+    closeChannelTimeMillis = 10000, errorStrategy = None, clock = MockClock)
 
   "ChannelPool" should {
     "close the ChannelGroup when close  is called" in {
@@ -121,6 +124,29 @@ class ChannelPoolSpec extends Specification with Mockito {
         two(bootstrap).connect(address)
       }
     }
+
+    "open a new channel if a channel has expired" in {
+      val channel = mock[Channel]
+      val future = new TestChannelFuture(channel, true)
+      bootstrap.connect(address) returns future
+      channelGroup.add(channel) returns true
+      channel.write(any[Request[_, _]]) returns future
+
+      val request = mock[Request[_, _]]
+      channelPool.sendRequest(request)
+      future.listener.operationComplete(future)
+
+      MockClock.currentTime = 20000L
+
+      channelPool.sendRequest(request)
+      future.listener.operationComplete(future)
+
+      got {
+        two(channelGroup).add(channel)
+        two(bootstrap).connect(address)
+      }
+    }
+
 
     "write all queued requests" in {
       val channel = mock[Channel]
