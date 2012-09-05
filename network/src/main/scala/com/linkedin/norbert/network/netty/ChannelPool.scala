@@ -68,7 +68,7 @@ class ChannelPool(address: InetSocketAddress, maxConnections: Int, openTimeoutMi
   case class PoolEntry(channel: Channel, creationTime: Long) {
     def age = System.currentTimeMillis() - creationTime
 
-    def isFresh(closeChannelTimeMillis: Long) = closeChannelTimeMillis > 0 && age < closeChannelTimeMillis
+    def reuseChannel(closeChannelTimeMillis: Long) = closeChannelTimeMillis < 0 || age < closeChannelTimeMillis
   }
 
   private val pool = new ArrayBlockingQueue[PoolEntry](maxConnections)
@@ -124,7 +124,7 @@ class ChannelPool(address: InetSocketAddress, maxConnections: Int, openTimeoutMi
       }
     }
 
-    if(poolEntry.isFresh(closeChannelTimeMillis))
+    if(poolEntry.reuseChannel(closeChannelTimeMillis))
       pool.offer(poolEntry)
     else
       poolEntry.channel.close()
@@ -139,7 +139,7 @@ class ChannelPool(address: InetSocketAddress, maxConnections: Int, openTimeoutMi
 
         case pe =>
           if (pe.channel.isConnected) {
-            if(pe.isFresh(closeChannelTimeMillis)) {
+            if(pe.reuseChannel(closeChannelTimeMillis)) {
               poolEntry = pe
               found = true
             } else {

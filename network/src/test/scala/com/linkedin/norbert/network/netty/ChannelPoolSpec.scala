@@ -147,6 +147,30 @@ class ChannelPoolSpec extends Specification with Mockito {
       }
     }
 
+    "not open a new channel if channel expiration is disabled" in {
+      val channelPool = new ChannelPool(address, 1, 100, 100, bootstrap, channelGroup,
+        closeChannelTimeMillis = 0, errorStrategy = None, clock = MockClock)
+      val channel = mock[Channel]
+      val future = new TestChannelFuture(channel, true)
+
+      bootstrap.connect(address) returns future
+      channelGroup.add(channel) returns true
+      channel.write(any[Request[_, _]]) returns future
+
+      val request = mock[Request[_, _]]
+      channelPool.sendRequest(request)
+      future.listener.operationComplete(future)
+
+      MockClock.currentTime = 20000L
+
+      channelPool.sendRequest(request)
+      future.listener.operationComplete(future)
+
+      got {
+        two(channelGroup).add(channel)
+        one(bootstrap).connect(address)
+      }
+    }
 
     "write all queued requests" in {
       val channel = mock[Channel]

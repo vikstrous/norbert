@@ -37,6 +37,14 @@ class NetworkClientConfig {
 
   var staleRequestTimeoutMins = NetworkDefaults.STALE_REQUEST_TIMEOUT_MINS
   var staleRequestCleanupFrequenceMins = NetworkDefaults.STALE_REQUEST_CLEANUP_FREQUENCY_MINS
+
+
+  /**
+   * Represents how long a channel stays alive. There are some specifics:
+   * closeChannelTimeMillis < 0: Channel stays alive forever
+   * closeChannelTimeMillis == 0: Immediately close the channel
+   * closeChannelTimeMillis > 0: Close the channel after closeChannelTimeMillis
+   */
   var closeChannelTimeMillis = NetworkDefaults.CLOSE_CHANNEL_TIMEOUT_MILLIS
 
   var requestStatisticsWindow = NetworkDefaults.REQUEST_STATISTICS_WINDOW
@@ -145,8 +153,13 @@ trait NetworkClient extends BaseNetworkClient {
   (implicit is: InputSerializer[RequestMsg, ResponseMsg], os: OutputSerializer[RequestMsg, ResponseMsg]): Unit = doIfConnected {
     if (request == null) throw new NullPointerException
 
-    val node = loadBalancer.getOrElse(throw new ClusterDisconnectedException).fold(ex => throw ex,
-      lb => lb.nextNode(capability).getOrElse(throw new NoNodesAvailableException("No node available that can handle the request: %s".format(request))))
+    val loadBalancerReady = loadBalancer.getOrElse(throw new ClusterDisconnectedException("Client has no node information"))
+
+    val node = loadBalancerReady.fold(ex => throw ex,
+      lb => {
+        val node: Option[Node] = lb.nextNode(capability)
+        node.getOrElse(throw new NoNodesAvailableException("No node available that can handle the request: %s".format(request)))
+      })
 
     doSendRequest(Request(request, node, is, os, if (maxRetry == 0) callback else retryCallback[RequestMsg, ResponseMsg](callback, maxRetry, capability)))
   }
