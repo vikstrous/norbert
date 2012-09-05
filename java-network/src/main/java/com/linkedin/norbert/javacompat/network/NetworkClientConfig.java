@@ -30,6 +30,14 @@ public class NetworkClientConfig {
   private int staleRequestTimeoutMins = NetworkDefaults.STALE_REQUEST_TIMEOUT_MINS();
   private int staleRequestCleanupFrequencyMins = NetworkDefaults.STALE_REQUEST_CLEANUP_FREQUENCY_MINS();
 
+  /**
+   * Represents how long a channel stays alive. There are some specifics:
+   * closeChannelTimeMillis < 0: Channel stays alive forever
+   * closeChannelTimeMillis == 0: Immediately close the channel
+   * closeChannelTimeMillis > 0: Close the channel after closeChannelTimeMillis
+   */
+  private long closeChannelTimeMillis = NetworkDefaults.CLOSE_CHANNEL_TIMEOUT_MILLIS();
+
   private long requestStatisticsWindow = NetworkDefaults.REQUEST_STATISTICS_WINDOW();
 
   private double outlierMuliplier = NetworkDefaults.OUTLIER_MULTIPLIER();
@@ -166,5 +174,13 @@ public class NetworkClientConfig {
 
   public void setResponseHandlerMaxWaitingQueueSize(int responseHandlerMaxWaitingQueueSize) {
     this.responseHandlerMaxWaitingQueueSize = responseHandlerMaxWaitingQueueSize;
+  }
+
+  public long getCloseChannelTimeMillis() {
+    return closeChannelTimeMillis;
+  }
+
+  public void setCloseChannelTimeMillis(long closeChannelTimeMillis) {
+    this.closeChannelTimeMillis = closeChannelTimeMillis;
   }
 }
