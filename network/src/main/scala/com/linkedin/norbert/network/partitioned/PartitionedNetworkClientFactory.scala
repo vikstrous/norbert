@@ -28,6 +28,7 @@ class PartitionedNetworkClientFactory[PartitionedId](clientName: String,
                                                      serviceName: String,
                                                      zooKeeperConnectString: String,
                                                      zooKeeperSessionTimeoutMillis: Int,
+                                                     closeChannelTimeMillis: Long,
                                                      norbertOutlierMultiplier: Double,
                                                      norbertOutlierConstant: Double,
                                                      partitionedLoadBalancerFactory: PartitionedLoadBalancerFactory[PartitionedId])
@@ -36,6 +37,7 @@ class PartitionedNetworkClientFactory[PartitionedId](clientName: String,
   def createPartitionedNetworkClient : PartitionedNetworkClient[PartitionedId] = {
     val config = new NetworkClientConfig
 
+    config.closeChannelTimeMillis = closeChannelTimeMillis
     config.outlierMuliplier = norbertOutlierMultiplier
     config.outlierConstant = norbertOutlierConstant
     config.clusterClient = ClusterClient(clientName, serviceName, zooKeeperConnectString, zooKeeperSessionTimeoutMillis)

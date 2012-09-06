@@ -45,7 +45,7 @@ class NorbertResponseIteratorSpec extends Specification with Mockito with Sample
       responseQueue += Right(1)
 
       val norbertResponseIterator = new NorbertResponseIterator[Int](3, responseQueue)
-      val timeoutIterator = new TimeoutIterator(norbertResponseIterator, 10L)
+      val timeoutIterator = new TimeoutIterator(norbertResponseIterator, 40L)
       val exceptionIterator = new ExceptionIterator(timeoutIterator)
 
       val partialIterator = new PartialIterator(exceptionIterator)

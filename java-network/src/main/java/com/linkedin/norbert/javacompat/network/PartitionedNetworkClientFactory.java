@@ -23,6 +23,7 @@ public class PartitionedNetworkClientFactory<PartitionedId> {
   public PartitionedNetworkClientFactory(String serviceName,
                                            String zooKeeperConnectString,
                                            Integer zooKeeperSessionTimeoutMillis,
+                                           Long closeChannelTimeMillis,
                                            Double norbertOutlierMultiplier,
                                            Double norbertOutlierConstant,
                                            PartitionedLoadBalancerFactory<PartitionedId> partitionedLoadBalancerFactory)
@@ -31,6 +32,7 @@ public class PartitionedNetworkClientFactory<PartitionedId> {
     _config.setServiceName(serviceName);
     _config.setZooKeeperConnectString(zooKeeperConnectString);
     _config.setZooKeeperSessionTimeoutMillis(zooKeeperSessionTimeoutMillis);
+    _config.setCloseChannelTimeMillis(closeChannelTimeMillis);
     _config.setOutlierMuliplier(norbertOutlierMultiplier);
     _config.setOutlierConstant(norbertOutlierConstant);
     _partitionedLoadBalancerFactory = partitionedLoadBalancerFactory;
