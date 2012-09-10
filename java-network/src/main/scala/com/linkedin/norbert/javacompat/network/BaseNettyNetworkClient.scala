@@ -44,6 +44,7 @@ abstract class BaseNettyNetworkClient extends BaseNetworkClient {
     c.serviceName = config.getServiceName
     c.zooKeeperConnectString = config.getZooKeeperConnectString
     c.zooKeeperSessionTimeoutMillis = config.getZooKeeperSessionTimeoutMillis
+    c.closeChannelTimeMillis = config.getCloseChannelTimeMillis
     c.connectTimeoutMillis = config.getConnectTimeoutMillis
     c.writeTimeoutMillis = config.getWriteTimeoutMillis
     c.maxConnectionsPerNode = config.getMaxConnectionsPerNode
