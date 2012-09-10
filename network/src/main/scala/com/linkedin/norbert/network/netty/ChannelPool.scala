@@ -144,9 +144,10 @@ class ChannelPool(address: InetSocketAddress, maxConnections: Int, openTimeoutMi
               found = true
             } else {
               pe.channel.close()
+              poolSize.decrementAndGet()
             }
           } else {
-            poolSize.decrementAndGet
+            poolSize.decrementAndGet()
           }
       }
     }
