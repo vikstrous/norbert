@@ -35,11 +35,14 @@ object HashFunctions {
     val FNV_BASIS = 0x811c9dc5
     val FNV_PRIME = (1 << 24) + 0x193
 
-    def fnv(key: Array[Byte], hash: Long): Int = {
-      if (key.length == 0) hash.toInt
-      else fnv(key.drop(1), (hash ^ (0xFF & key.head)) * FNV_PRIME)
-    }
+    var hash: Long = FNV_BASIS
+    var i: Int = 0
+    var maxIdx: Int = bytes.length
 
-    fnv(bytes, FNV_BASIS)
+    while (i < maxIdx) {
+      hash = (hash ^ (0xFF & bytes(i))) * FNV_PRIME
+      i += 1
+    }
+    hash.toInt
   }
 }
