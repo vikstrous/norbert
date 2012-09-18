@@ -126,8 +126,10 @@ class ChannelPool(address: InetSocketAddress, maxConnections: Int, openTimeoutMi
 
     if(poolEntry.reuseChannel(closeChannelTimeMillis))
       pool.offer(poolEntry)
-    else
+    else {
+      poolSize.decrementAndGet()
       poolEntry.channel.close()
+    }
   }
 
   private def checkoutChannel: Option[PoolEntry] = {
@@ -143,8 +145,8 @@ class ChannelPool(address: InetSocketAddress, maxConnections: Int, openTimeoutMi
               poolEntry = pe
               found = true
             } else {
-              pe.channel.close()
               poolSize.decrementAndGet()
+              pe.channel.close()
             }
           } else {
             poolSize.decrementAndGet()
@@ -158,7 +160,7 @@ class ChannelPool(address: InetSocketAddress, maxConnections: Int, openTimeoutMi
   private def openChannel(request: Request[_, _]) {
     if (poolSize.incrementAndGet > maxConnections) {
       poolSize.decrementAndGet
-      log.warn("Unable to open channel, pool is full")
+      log.warn("Unable to open channel, pool is full. Waiting for another channel to return to queue before processing")
     } else {
       log.debug("Opening a channel to: %s".format(address))
 
@@ -193,6 +195,7 @@ class ChannelPool(address: InetSocketAddress, maxConnections: Int, openTimeoutMi
         log.error("IO exception for " + request.node + ", marking node offline")
         errorStrategy.foreach(_.notifyFailure(request.node))
         channel.close
+
 
         request.onFailure(writeFuture.getCause)
       }
