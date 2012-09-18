@@ -84,7 +84,7 @@ package object norbertutils {
     val (lIdx, rIdx) = (idx.floor.toInt, idx.ceil.toInt)
 
     if(idx == lIdx)
-      n.toDouble(values(idx))
+      n.toDouble(values(lIdx))
     else {
      // Linearly Interpolate between the two
      (idx - lIdx) * n.toDouble(values(rIdx)) + (rIdx - idx) * n.toDouble(values(lIdx))
