@@ -83,8 +83,12 @@ package object norbertutils {
 
     val (lIdx, rIdx) = (idx.floor.toInt, idx.ceil.toInt)
 
-    // Linearly Interpolate between the two
-    (idx - lIdx) * n.toDouble(values(rIdx)) + (rIdx - idx) * n.toDouble(values(lIdx))
+    if(idx == lIdx)
+      n.toDouble(values(idx))
+    else {
+     // Linearly Interpolate between the two
+     (idx - lIdx) * n.toDouble(values(rIdx)) + (rIdx - idx) * n.toDouble(values(lIdx))
+    }
   }
 
   def continueOnError(block: => Unit): Unit = {
