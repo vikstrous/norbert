@@ -30,7 +30,7 @@ import norbertutils.MockClock
 class ChannelPoolSpec extends Specification with Mockito {
   val channelGroup = mock[ChannelGroup]
   val bootstrap = mock[ClientBootstrap]
-  val address = new InetSocketAddress("localhost", 31313)
+  val address = new InetSocketAddress("127.0.0.1", 31313)
 
   val channelPool = new ChannelPool(address, 1, 100, 100, bootstrap, channelGroup,
     closeChannelTimeMillis = 10000, errorStrategy = None, clock = MockClock)
@@ -149,7 +149,7 @@ class ChannelPoolSpec extends Specification with Mockito {
 
     "not open a new channel if channel expiration is disabled" in {
       val channelPool = new ChannelPool(address, 1, 100, 100, bootstrap, channelGroup,
-        closeChannelTimeMillis = 0, errorStrategy = None, clock = MockClock)
+        closeChannelTimeMillis = -1L, errorStrategy = None, clock = MockClock)
       val channel = mock[Channel]
       val future = new TestChannelFuture(channel, true)
 
@@ -159,6 +159,7 @@ class ChannelPoolSpec extends Specification with Mockito {
 
       val request = mock[Request[_, _]]
       channelPool.sendRequest(request)
+      channel.isConnected returns true
       future.listener.operationComplete(future)
 
       MockClock.currentTime = 20000L
@@ -167,7 +168,7 @@ class ChannelPoolSpec extends Specification with Mockito {
       future.listener.operationComplete(future)
 
       got {
-        two(channelGroup).add(channel)
+        one(channelGroup).add(channel)
         one(bootstrap).connect(address)
       }
     }
