@@ -24,6 +24,7 @@ import server.{MessageExecutorComponent, NetworkServer}
 import netty.NettyPartitionedNetworkClient
 import client.NetworkClientConfig
 import cluster.{Node, ClusterDisconnectedException, InvalidClusterException, ClusterClientComponent}
+import scala.util.Random
 
 object PartitionedNetworkClient {
   def apply[PartitionedId](config: NetworkClientConfig, loadBalancerFactory: PartitionedLoadBalancerFactory[PartitionedId]): PartitionedNetworkClient[PartitionedId] = {
@@ -317,13 +318,17 @@ trait PartitionedNetworkClient[PartitionedId] extends BaseNetworkClient {
     }
   }
 
+  private val random = new Random
+
   def correctRequestPartitioning(nodes: Map[Node, Set[Int]], partitionToNodes: Map[Int, Set[Node]]): Map[Node, Set[Int]] = {
     partitionToNodes.foldLeft(Map.empty[Node, Set[Int]]) { case (map, (partitionId, candidates)) =>
       val nodeToUse = if(candidates.size == 1) {
         candidates.head
       } else {
         // randomly select
-        candidates.head
+        val candidateSeq = candidates.toSeq
+        val randomIndex = random.nextInt(candidateSeq.size)
+        candidateSeq(randomIndex)
       }
 
       val nodePartitions = map.getOrElse(nodeToUse, Set.empty[Int])
