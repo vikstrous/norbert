@@ -131,9 +131,11 @@ class NettyPartitionedNetworkClient[PartitionedId](config: NetworkClientConfig, 
     val sPartitions = partitions.foldLeft(Set.empty[Int])(_ + _.intValue())
 
     underlying.sendRequestToPartitions(id, sPartitions, (node: SNode, ids: Set[Int]) => {
+
       val set = new java.util.HashSet[java.lang.Integer]
       ids.foreach(set.add(_))
       requestBuilder(node, set)
+
     })(serializer, serializer)
   }
 
@@ -145,8 +147,10 @@ class NettyPartitionedNetworkClient[PartitionedId](config: NetworkClientConfig, 
 
   def sendRequestToOneReplica[RequestMsg, ResponseMsg](id: PartitionedId, requestBuilder: RequestBuilder[java.lang.Integer, RequestMsg], serializer: Serializer[RequestMsg, ResponseMsg]) =
     underlying.sendRequestToOneReplica(id, (node: SNode, ids: Set[Int]) => {
+
       val set = new java.util.HashSet[java.lang.Integer]
       ids.foreach(set.add(_))
       requestBuilder(node, set)
+
     })(serializer, serializer)
 }

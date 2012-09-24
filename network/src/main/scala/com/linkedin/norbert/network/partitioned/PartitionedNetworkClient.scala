@@ -268,11 +268,67 @@ trait PartitionedNetworkClient[PartitionedId] extends BaseNetworkClient {
 
     val queue = new ResponseQueue[ResponseMsg]
 
-    nodes.foreach { case (node, ids) =>
+    ensureReplicaConsistency(nodes).foreach { case (node, ids) =>
       doSendRequest(PartitionedRequest(requestBuilder(node, ids), node, ids, requestBuilder, is, os, queue.+=))
     }
 
     new NorbertResponseIterator(nodes.size, queue)
+  }
+
+  /**
+   * Catch & log inconsistencies in the request handling, and then correct them.
+   * This shouldn't happen but we've gotten bug reports. I really hate doing this.
+   * @param nodes
+   */
+  def ensureReplicaConsistency(nodes: Map[Node, Set[Int]]): Map[Node, Set[Int]] = {
+    val (hasInconsistency, partitionToNodes) =
+      nodes.foldLeft((false, Map.empty[Int, Set[Node]])) { case ((hasInconsistency, map), (node, ids)) =>
+
+      val thisNodeInconsistency = ids.foldLeft(hasInconsistency) { (hasInconsistency, id) =>
+        if(map.contains(id)) {
+          // This is a no-no. This partition id is being sent to another node.
+          val otherNodes = map(id)
+          for (otherNode <- otherNodes) {
+            val otherPartitions = nodes.getOrElse(otherNode, Set.empty[Int])
+
+            log.warn("Request conflict found between [%s, Searching Partitions (%s)]; [%s, Searching Partitions (%s)]"
+              .format(node, ids.mkString(", "), otherNode, otherPartitions.mkString(", ")))
+
+          }
+          true
+        } else {
+          hasInconsistency
+        }
+      }
+
+      // Keep track of what partitions were assigned to which nodes
+      (thisNodeInconsistency, ids.foldLeft(map) { case (map, id) =>
+        val mapValue = map.getOrElse(id, Set.empty[Node])
+        map + (id -> (mapValue + node))
+      })
+    }
+
+    if(hasInconsistency) {
+      // Fix it up our nodes
+      correctRequestPartitioning(nodes, partitionToNodes)
+    } else {
+      // all clean
+      nodes
+    }
+  }
+
+  def correctRequestPartitioning(nodes: Map[Node, Set[Int]], partitionToNodes: Map[Int, Set[Node]]): Map[Node, Set[Int]] = {
+    partitionToNodes.foldLeft(Map.empty[Node, Set[Int]]) { case (map, (partitionId, candidates)) =>
+      val nodeToUse = if(candidates.size == 1) {
+        candidates.head
+      } else {
+        // randomly select
+        candidates.head
+      }
+
+      val nodePartitions = map.getOrElse(nodeToUse, Set.empty[Int])
+      map + (nodeToUse -> (nodePartitions + partitionId))
+    }
   }
 
   def sendRequestToReplicas[RequestMsg, ResponseMsg](id: PartitionedId, request: RequestMsg, maxRetry : Int = 0)
@@ -330,7 +386,7 @@ trait PartitionedNetworkClient[PartitionedId] extends BaseNetworkClient {
 
     val queue = new ResponseQueue[ResponseMsg]
 
-    nodes.foreach { case (node, ids) =>
+    ensureReplicaConsistency(nodes).foreach { case (node, ids) =>
       doSendRequest(PartitionedRequest(requestBuilder(node, ids), node, ids, requestBuilder, is, os, queue.+=))
     }
 

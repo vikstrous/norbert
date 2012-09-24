@@ -757,6 +757,19 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
         networkClient.start
         networkClient.sendRequest(Set(1, 2), (node: Node, ids: Set[Int]) => request, ag _) must throwA[Exception]
       }
+
+      "Automatically fix partitioned requests " in {
+        val testData = Map(
+          Node(id = 0, url = "", available = true, partitionIds = Set(1, 2, 3)) -> Set(1, 2),
+          Node(id = 1, url = "", available = true, partitionIds = Set(1, 2, 3)) -> Set(2, 3))
+
+        val corrected = networkClient.ensureReplicaConsistency(testData)
+
+        // Search for duplicates
+        corrected.size must be_==(2)
+        testData.values.map(_.toSeq).flatten.size must be_==(4)
+        corrected.values.map(_.toSeq).flatten.size must be_==(3)
+      }
     }
   }
 
