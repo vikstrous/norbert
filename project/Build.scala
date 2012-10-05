@@ -15,10 +15,10 @@ object BuildSettings {
 
   val buildSettings = Defaults.defaultSettings ++ Seq (
     organization := "com.linkedin",
-    version      := "0.6.29-SNAPSHOT",
+    version      := "0.6.29",
     scalaVersion := "2.8.1",
     credentialsSetting,
-    publishArtifact in (Compile, packageDoc) := false,
+//    publishArtifact in (Compile, packageDoc) := false,
     publishTo <<= (version) { version: String =>
       if (version.trim.endsWith("SNAPSHOT"))
         Some("Sonatype Nexus Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots")
@@ -137,7 +137,10 @@ object NorbertBuild extends Build {
         val protoTmpDir: File = copyProtoFiles(classDir)
         val classpath = protoTmpDir :: cp
 
-        d.cached(cache / "doc", Defaults.nameForSrc(config.name), scalaSources, classpath , target, options, s.log)
+        // Skipping scaladoc for now since theres ANOTHER bug, https://issues.scala-lang.org/browse/SI-4284
+        val emptySources = Seq.empty[File]
+
+        d.cached(cache / "doc", Defaults.nameForSrc(config.name), /*scalaSources*/ emptySources, classpath , target, options, s.log)
         target
       }
 

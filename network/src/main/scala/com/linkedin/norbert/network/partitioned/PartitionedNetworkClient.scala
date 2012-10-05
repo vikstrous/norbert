@@ -151,7 +151,7 @@ trait PartitionedNetworkClient[PartitionedId] extends BaseNetworkClient {
    * @param ids the <code>PartitionedId</code>s to which the message is addressed
    * @param message the message to send
    * @param requestBuilder A method which allows the user to generate a specialized request for a set of partitions
-   * before it is sent to the <code>Node</cod e>.
+   * before it is sent to the <code>Node</code>.
    * @param maxRetry maxium # of retry attempts
    *
    * @return a <code>ResponseIterator</code>. One response will be returned by each <code>Node</code>
