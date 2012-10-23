@@ -18,6 +18,8 @@ package network
 package partitioned
 package loadbalancer
 
+
+import _root_.scala.Predef._
 import cluster.{InvalidClusterException, Node}
 import common.Endpoint
 
@@ -56,6 +58,20 @@ trait PartitionedLoadBalancer[PartitionedId] {
    * @return the <code>Nodes</code> to broadcast the next message to a replica to
    */
   def nodesForPartitions(id: PartitionedId, partitions: Set[Int], capability: Option[Long] = None): Map[Node, Set[Int]]
+
+  /**
+   * Calculates a mapping of nodes to partitions to ensure ids belong to the same partition will be scatter to the same node
+   * @param id
+   * @param capability
+   * @return
+   */
+  def nodesForPartitionedIds(ids: Set[PartitionedId], capability: Option[Long] = None): Map[Node,  Set[PartitionedId]]  =
+  {
+    ids.foldLeft(Map[Node, Set[PartitionedId]]().withDefaultValue(Set())) { (map, id) =>
+      val node = nextNode(id, capability).getOrElse(throw new NoNodesAvailableException("Unable to satisfy request, no node available for id %s".format(id)))
+      map.updated(node, map(node) + id)
+    }
+  }
 }
 
 /**

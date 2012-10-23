@@ -26,6 +26,12 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
   val networkClient = new PartitionedNetworkClient[Int] with ClusterClientComponent with ClusterIoClientComponent
       with PartitionedLoadBalancerFactoryComponent[Int] {
     val lb = mock[PartitionedLoadBalancer[Int]]
+    val loadbalancer = new PartitionedLoadBalancer[Int] {
+      def nextNode(id: Int, capability: Option[Long]) = lb.nextNode(id, capability)
+      def nodesForOneReplica(id: Int, capability: Option[Long]) = lb.nodesForOneReplica(id, capability)
+      def nodesForPartitionedId(id: Int, capability: Option[Long]) = lb.nodesForPartitionedId(id, capability)
+      def nodesForPartitions(id: Int, partitions: Set[Int], capability: Option[Long]) = lb.nodesForPartitions(id, partitions, capability)
+    }
     val loadBalancerFactory = mock[PartitionedLoadBalancerFactory[Int]]
     val clusterIoClient = mock[ClusterIoClient]
     val clusterClient = PartitionedNetworkClientSpec.this.clusterClient
@@ -72,7 +78,7 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
         clusterClient.nodes returns nodeSet
         clusterClient.isConnected returns true
         networkClient.clusterIoClient.nodesChanged(nodeSet) returns endpoints
-        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.lb
+        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.loadbalancer
         networkClient.lb.nextNode(1, None) returns Some(nodes(1))
 //      doNothing.when(clusterIoClient).sendRequest(node, message, null)
 
@@ -87,7 +93,7 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
         clusterClient.nodes returns nodeSet
         clusterClient.isConnected returns true
         networkClient.clusterIoClient.nodesChanged(nodeSet) returns endpoints
-        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.lb
+        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.loadbalancer
         networkClient.lb.nextNode(1, Some(0x1)) returns Some(nodes(1))
 
         networkClient.start
@@ -131,7 +137,7 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
         clusterClient.nodes returns nodeSet
         clusterClient.isConnected returns true
         networkClient.clusterIoClient.nodesChanged(nodeSet) returns endpoints
-        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.lb
+        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.loadbalancer
         networkClient.lb.nextNode(1, None) returns Some(nodes(1))
         networkClient.lb.nextNode(2, None) returns Some(nodes(2))
         networkClient.lb.nextNode(3, None) returns Some(nodes(1))
@@ -153,7 +159,7 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
         clusterClient.nodes returns nodeSet
         clusterClient.isConnected returns true
         networkClient.clusterIoClient.nodesChanged(nodeSet) returns endpoints
-        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.lb
+        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.loadbalancer
         networkClient.lb.nextNode(1, Some(0xffL)) returns Some(nodes(1))
         networkClient.lb.nextNode(2, Some(0xffL)) returns Some(nodes(2))
         networkClient.lb.nextNode(3, Some(0xffL)) returns Some(nodes(1))
@@ -192,7 +198,7 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
         clusterClient.nodes returns nodeSet
         clusterClient.isConnected returns true
         networkClient.clusterIoClient.nodesChanged(nodeSet) returns endpoints
-        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.lb
+        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.loadbalancer
         networkClient.lb.nextNode(1, None) returns None
 //      doNothing.when(clusterIoClient).sendRequest(node, message, null)
 
@@ -209,7 +215,7 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
         clusterClient.nodes returns nodeSet
         clusterClient.isConnected returns true
         networkClient.clusterIoClient.nodesChanged(nodeSet) returns endpoints
-        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.lb
+        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.loadbalancer
         List(1, 2, 3).foreach(networkClient.lb.nextNode(_, None) returns Some(Node(1, "localhost:31313", true)))
 
         networkClient.start
@@ -235,7 +241,7 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
         clusterClient.nodes returns nodeSet
         clusterClient.isConnected returns true
         networkClient.clusterIoClient.nodesChanged(nodeSet) returns endpoints
-        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.lb
+        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.loadbalancer
         List(1, 2).foreach(networkClient.lb.nextNode(_, None) returns Some(nodes(0)))
         List(3, 4).foreach(networkClient.lb.nextNode(_, None) returns Some(nodes(1)))
 
@@ -256,7 +262,7 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
         clusterClient.nodes returns nodeSet
         clusterClient.isConnected returns true
         networkClient.clusterIoClient.nodesChanged(nodeSet) returns endpoints
-        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.lb
+        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.loadbalancer
         List(1, 2).foreach(networkClient.lb.nextNode(_, None) returns Some(nodes(0)))
 
         networkClient.start
@@ -282,7 +288,7 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
         clusterClient.nodes returns nodeSet
         clusterClient.isConnected returns true
         networkClient.clusterIoClient.nodesChanged(nodeSet) returns endpoints
-        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.lb
+        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.loadbalancer
         networkClient.lb.nextNode(1, None) returns None
 //      doNothing.when(clusterIoClient).sendRequest(node, message, null)
 
@@ -302,7 +308,7 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
         clusterClient.nodes returns nodeSet
         clusterClient.isConnected returns true
         networkClient.clusterIoClient.nodesChanged(nodeSet) returns endpoints
-        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.lb
+        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.loadbalancer
         List(1, 2, 3).foreach(networkClient.lb.nextNode(_, None) returns Some(Node(1, "localhost:31313", true)))
 
         networkClient.start
@@ -324,7 +330,7 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
         clusterClient.nodes returns nodeSet
         clusterClient.isConnected returns true
         networkClient.clusterIoClient.nodesChanged(nodeSet) returns endpoints
-        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.lb
+        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.loadbalancer
         List(1, 2).foreach(networkClient.lb.nextNode(_, None) returns Some(nodes(0)))
         List(3, 4).foreach(networkClient.lb.nextNode(_, None) returns Some(nodes(1)))
 
@@ -345,7 +351,7 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
         clusterClient.nodes returns nodeSet
         clusterClient.isConnected returns true
         networkClient.clusterIoClient.nodesChanged(nodeSet) returns endpoints
-        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.lb
+        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.loadbalancer
         List(1, 2).foreach(networkClient.lb.nextNode(_, None) returns Some(nodes(0)))
 
         networkClient.start
@@ -368,7 +374,7 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
         clusterClient.nodes returns nodeSet
         clusterClient.isConnected returns true
         networkClient.clusterIoClient.nodesChanged(nodeSet) returns endpoints
-        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.lb
+        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.loadbalancer
         networkClient.lb.nextNode(1, None) returns None
 
         networkClient.start
@@ -384,7 +390,7 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
         clusterClient.nodes returns nodeSet
         clusterClient.isConnected returns true
         networkClient.clusterIoClient.nodesChanged(nodeSet) returns endpoints
-        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.lb
+        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.loadbalancer
         List(1,2,3).foreach(networkClient.lb.nodesForPartitionedId(_, None) returns nodeSet)
 
         networkClient.start
@@ -398,7 +404,7 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
         clusterClient.nodes returns nodeSet
         clusterClient.isConnected returns true
         networkClient.clusterIoClient.nodesChanged(nodeSet) returns endpoints
-        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.lb
+        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.loadbalancer
         List(1,2,3).foreach(networkClient.lb.nodesForPartitionedId(_, Some(0xfL)) returns nodeSet)
 
         networkClient.start
@@ -422,7 +428,7 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
         clusterClient.nodes returns nodeSet
         clusterClient.isConnected returns true
         networkClient.clusterIoClient.nodesChanged(nodeSet) returns endpoints
-        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.lb
+        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.loadbalancer
         networkClient.lb.nodesForPartitionedId(1, None) returns (Set.empty[Node])
 
         networkClient.start
@@ -459,7 +465,7 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
         clusterClient.nodes returns nodeSet
         clusterClient.isConnected returns true
         networkClient.clusterIoClient.nodesChanged(nodeSet) returns endpoints
-        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.lb
+        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.loadbalancer
         networkClient.lb.nextNode(1, None) returns None
         networkClient.start
 
@@ -473,7 +479,7 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
         clusterClient.nodes returns nodeSet
         clusterClient.isConnected returns true
         networkClient.clusterIoClient.nodesChanged(nodeSet) returns endpoints
-        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.lb
+        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.loadbalancer
         networkClient.lb.nextNode(1, None) returns Some(nodes(1)) // node(1) -> node(1) -> node(1)
 
         networkClient.start
@@ -734,7 +740,7 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
         clusterClient.nodes returns nodeSet
         clusterClient.isConnected returns true
         networkClient.clusterIoClient.nodesChanged(nodeSet) returns endpoints
-        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.lb
+        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.loadbalancer
         List(1, 2).foreach(networkClient.lb.nextNode(_, None) returns Some(nodes(0)))
 
         networkClient.start
@@ -751,7 +757,7 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
         clusterClient.nodes returns nodeSet
         clusterClient.isConnected returns true
         networkClient.clusterIoClient.nodesChanged(nodeSet) returns endpoints
-        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.lb
+        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.loadbalancer
         List(1, 2).foreach(networkClient.lb.nextNode(_, None) returns Some(nodes(0)))
 
         networkClient.start

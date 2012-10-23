@@ -34,7 +34,7 @@ abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId]
 (numPartitions: Int, serveRequestsIfPartitionMissing: Boolean = true) extends PartitionedLoadBalancerFactory[PartitionedId] {
   def this(numPartitions: Int) = this(numPartitions, true)
   
-  val underlying = new SDefaultPartitionedLoadBalancerFactory[PartitionedId](numPartitions, serveRequestsIfPartitionMissing) {
+  val underlying = new SDefaultPartitionedLoadBalancerFactory[PartitionedId](numPartitions, 0, serveRequestsIfPartitionMissing) {
     protected def calculateHash(id: PartitionedId) = hashPartitionedId(id)
 
     def getNumPartitions(endpoints: Set[SEndpoint]) = {

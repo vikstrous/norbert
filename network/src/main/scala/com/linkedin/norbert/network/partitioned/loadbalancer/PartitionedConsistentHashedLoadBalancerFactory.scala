@@ -34,7 +34,7 @@ class PartitionedConsistentHashedLoadBalancerFactory[PartitionedId](numPartition
                                                                     hashFn: PartitionedId => Int,
                                                                     endpointHashFn: String => Int,
                                                                     serveRequestsIfPartitionMissing: Boolean)
-  extends DefaultPartitionedLoadBalancerFactory[PartitionedId](numPartitions, serveRequestsIfPartitionMissing) {
+  extends DefaultPartitionedLoadBalancerFactory[PartitionedId](numPartitions, 0, serveRequestsIfPartitionMissing) {
 
   def this(slicesPerEndpoint: Int, hashFn: PartitionedId => Int, endpointHashFn: String => Int, serveRequestsIfPartitionMissing: Boolean) = {
     this(-1, slicesPerEndpoint, hashFn, endpointHashFn, serveRequestsIfPartitionMissing)

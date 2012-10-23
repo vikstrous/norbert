@@ -18,17 +18,22 @@ package network
 package partitioned
 package loadbalancer
 
+import logging.Logging
 import cluster.{Node, InvalidClusterException}
 import common.Endpoint
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
+import scala.util.Random
+import scala.util.control.Breaks._
 
 /**
  * This class is intended for applications where there is a mapping from partitions -> servers able to respond to those requests. Requests are round-robined
  * between the partitions
  */
-abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](numPartitions: Int, serveRequestsIfPartitionMissing: Boolean = true) extends PartitionedLoadBalancerFactory[PartitionedId] {
+abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](numPartitions: Int, setLimit: Int = 0, serveRequestsIfPartitionMissing: Boolean = true) extends PartitionedLoadBalancerFactory[PartitionedId] with Logging {
   def newLoadBalancer(endpoints: Set[Endpoint]): PartitionedLoadBalancer[PartitionedId] = new PartitionedLoadBalancer[PartitionedId] with DefaultLoadBalancerHelper {
     val partitionToNodeMap = generatePartitionToNodeMap(endpoints, numPartitions, serveRequestsIfPartitionMissing)
+
+    val setCoverCounter = new AtomicInteger(0)
 
     def nextNode(id: PartitionedId, capability: Option[Long] = None) = nodeForPartition(partitionForId(id), capability)
 
@@ -59,7 +64,74 @@ abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](numPartition
           throw new InvalidClusterException("Partition %s is unavailable, cannot serve requests.".format(partition))
       }
     }
+
+    override def nodesForPartitionedIds(partitionedIds: Set[PartitionedId], capability: Option[Long]) = {
+      val partitionsMap = partitionedIds.foldLeft(Map.empty[Int, Set[PartitionedId]])
+      { case (map, id) =>
+        val partition = partitionForId(id)
+        map + (partition -> (map.getOrElse(partition, Set.empty[PartitionedId]) + id))
+      }
+
+      var partitionIds = collection.mutable.Set(partitionsMap.keys.toSeq: _*)
+
+      val remainingEndPoints = new collection.mutable.ArrayBuffer[Endpoint]() ++ endpoints
+      setCoverCounter.compareAndSet(java.lang.Integer.MAX_VALUE, 0)
+
+      val res = collection.mutable.Map.empty[Node, collection.Set[Int]]
+      val counterIdx = setCoverCounter.getAndIncrement
+
+      breakable {
+        while (!partitionIds.isEmpty) {
+          var intersect = collection.mutable.Set.empty[Int]
+          var endpoint : Endpoint =  null
+          val m = remainingEndPoints.size
+          val idx = counterIdx % m
+          var i = idx
+
+          breakable
+          {
+            do {
+              val ep = remainingEndPoints(i)
+              val s = partitionIds intersect ep.node.partitionIds
+
+              if (s.size > intersect.size && ep.canServeRequests && ep.node.isCapableOf(capability))
+              {
+                intersect = s
+                endpoint = ep
+                if ((partitionIds.size == s.size) || (setLimit > 0 && s.size >= setLimit))
+                  break
+              }
+              i = (i+1) % m
+            } while(i != idx)
+          }
+
+          if (endpoint == null)
+          {
+            if (serveRequestsIfPartitionMissing)
+              break
+            else
+              throw new InvalidClusterException("")
+          }
+
+          res += (endpoint.node -> intersect)
+          remainingEndPoints -= endpoint
+          partitionIds --= intersect
+        }
+      }
+
+
+      res.foldLeft(Map.empty[Node, Set[PartitionedId]]) {
+        case (map, (n, pIds)) =>
+        {
+          map + (n -> pIds.foldLeft(Set.empty[PartitionedId]) {
+            case (s, pId) =>
+              s ++ partitionsMap.getOrElse(pId, Set.empty[PartitionedId])
+          })
+        }
+      }
+    }
   }
+
   /**
    * Calculates the id of the partition on which the specified <code>Id</code> resides.
    *
@@ -82,4 +154,5 @@ abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](numPartition
   protected def calculateHash(id: PartitionedId): Int
 
   def getNumPartitions(endpoints: Set[Endpoint]): Int
+
 }
