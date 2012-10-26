@@ -29,7 +29,7 @@ import scala.util.control.Breaks._
  * This class is intended for applications where there is a mapping from partitions -> servers able to respond to those requests. Requests are round-robined
  * between the partitions
  */
-abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](numPartitions: Int, setLimit: Int = 0, serveRequestsIfPartitionMissing: Boolean = true) extends PartitionedLoadBalancerFactory[PartitionedId] with Logging {
+abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](numPartitions: Int, serveRequestsIfPartitionMissing: Boolean = true) extends PartitionedLoadBalancerFactory[PartitionedId] with Logging {
   def newLoadBalancer(endpoints: Set[Endpoint]): PartitionedLoadBalancer[PartitionedId] = new PartitionedLoadBalancer[PartitionedId] with DefaultLoadBalancerHelper {
     val partitionToNodeMap = generatePartitionToNodeMap(endpoints, numPartitions, serveRequestsIfPartitionMissing)
 
@@ -72,53 +72,54 @@ abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](numPartition
         map + (partition -> (map.getOrElse(partition, Set.empty[PartitionedId]) + id))
       }
 
-      var partitionIds = collection.mutable.Set(partitionsMap.keys.toSeq: _*)
-
-      val remainingEndPoints = new collection.mutable.ArrayBuffer[Endpoint]() ++ endpoints
-      setCoverCounter.compareAndSet(java.lang.Integer.MAX_VALUE, 0)
-
+      var partitionIds = partitionsMap.keys.toSet[Int]
       val res = collection.mutable.Map.empty[Node, collection.Set[Int]]
-      val counterIdx = setCoverCounter.getAndIncrement
 
       breakable {
         while (!partitionIds.isEmpty) {
-          var intersect = collection.mutable.Set.empty[Int]
+          var intersect = Set.empty[Int]
           var endpoint : Endpoint =  null
-          val m = remainingEndPoints.size
-          val idx = counterIdx % m
-          var i = idx
 
-          breakable
-          {
-            do {
-              val ep = remainingEndPoints(i)
-              val s = partitionIds intersect ep.node.partitionIds
+          partitionToNodeMap.get(partitionIds.head) match {
+            case None =>
+              break
+            case Some((endpoints, counter, states)) =>
+              import math._
+              val es = endpoints.size
+              counter.compareAndSet(java.lang.Integer.MAX_VALUE, 0)
+              val idx = counter.getAndIncrement % es
+              var i = idx
+              breakable {
+                do {
+                  val ep = endpoints(i)
+                  val s = ep.node.partitionIds intersect partitionIds
 
-              if (s.size > intersect.size && ep.canServeRequests && ep.node.isCapableOf(capability))
-              {
-                intersect = s
-                endpoint = ep
-                if ((partitionIds.size == s.size) || (setLimit > 0 && s.size >= setLimit))
-                  break
+                  if (s.size > intersect.size && ep.canServeRequests && ep.node.isCapableOf(capability))
+                  {
+                    intersect = s
+                    endpoint = ep
+                    if (partitionIds.size == s.size)
+                      break
+                  }
+                  i = (i+1 ) % es
+                } while(i != idx)
               }
-              i = (i+1) % m
-            } while(i != idx)
           }
 
           if (endpoint == null)
           {
             if (serveRequestsIfPartitionMissing)
-              break
+            {
+              intersect = intersect + partitionIds.head
+            }
             else
               throw new InvalidClusterException("")
           }
 
           res += (endpoint.node -> intersect)
-          remainingEndPoints -= endpoint
-          partitionIds --= intersect
+          partitionIds = ( partitionIds -- intersect)
         }
       }
-
 
       res.foldLeft(Map.empty[Node, Set[PartitionedId]]) {
         case (map, (n, pIds)) =>
