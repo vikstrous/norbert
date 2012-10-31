@@ -65,13 +65,23 @@ abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](numPartition
       }
     }
 
+    /**
+     * Use greedy set cover to minimize the nodes that serve the requested partitioned Ids
+     *
+     * @param partitionedIds
+     * @param capability
+     * @return
+     */
     override def nodesForPartitionedIds(partitionedIds: Set[PartitionedId], capability: Option[Long]) = {
+
+      // calculates partition Ids from the set of partitioned Ids
       val partitionsMap = partitionedIds.foldLeft(Map.empty[Int, Set[PartitionedId]])
       { case (map, id) =>
         val partition = partitionForId(id)
         map + (partition -> (map.getOrElse(partition, Set.empty[PartitionedId]) + id))
       }
 
+      // set to be covered
       var partitionIds = partitionsMap.keys.toSet[Int]
       val res = collection.mutable.Map.empty[Node, collection.Set[Int]]
 
@@ -80,6 +90,7 @@ abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](numPartition
           var intersect = Set.empty[Int]
           var endpoint : Endpoint =  null
 
+          // take one element in the set, locate only nodes that serving this partition
           partitionToNodeMap.get(partitionIds.head) match {
             case None =>
               break
@@ -89,11 +100,19 @@ abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](numPartition
               counter.compareAndSet(java.lang.Integer.MAX_VALUE, 0)
               val idx = counter.getAndIncrement % es
               var i = idx
+
+              // This is a modified version of greedy set cover algorithm, instead of finding the node that covers most of
+              // the partitionIds set, we only check it across nodes that serving the selected partition. This guarantees
+              // we will pick a node at least cover 1 more partition, but also in case of multiple replicas of partitions,
+              // this helps to locate nodes long to the same replica.
               breakable {
                 do {
                   val ep = endpoints(i)
+
+                  // perform intersection between the set to be covered and the set the node is covering
                   val s = ep.node.partitionIds intersect partitionIds
 
+                  // record the largest intersect
                   if (s.size > intersect.size && ep.canServeRequests && ep.node.isCapableOf(capability))
                   {
                     intersect = s
@@ -116,6 +135,7 @@ abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](numPartition
               throw new InvalidClusterException("")
           }
 
+          // remove covered set; remove the node providing that coverage
           res += (endpoint.node -> intersect)
           partitionIds = ( partitionIds -- intersect)
         }
