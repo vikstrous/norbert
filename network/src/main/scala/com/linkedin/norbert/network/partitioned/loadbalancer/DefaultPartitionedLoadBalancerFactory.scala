@@ -132,11 +132,11 @@ abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](numPartition
               intersect = intersect + partitionIds.head
             }
             else
-              throw new InvalidClusterException("")
-          }
+              throw new NoNodesAvailableException("Unable to satisfy request, no node available for partition Id %s".format(partitionIds.head))
+          } else
+            res += (endpoint.node -> intersect)
 
           // remove covered set; remove the node providing that coverage
-          res += (endpoint.node -> intersect)
           partitionIds = ( partitionIds -- intersect)
         }
       }
