@@ -461,11 +461,7 @@ trait PartitionedNetworkClient[PartitionedId] extends BaseNetworkClient {
 
   private def calculateNodesFromIds(ids: Set[PartitionedId], capability: Option[Long]) = {
     val lb = loadBalancer.getOrElse(throw new ClusterDisconnectedException).fold(ex => throw ex, lb => lb)
-
-    ids.foldLeft(Map[Node, Set[PartitionedId]]().withDefaultValue(Set())) { (map, id) =>
-      val node = lb.nextNode(id, capability).getOrElse(throw new NoNodesAvailableException("Unable to satisfy request, no node available for id %s".format(id)))
-      map.updated(node, map(node) + id)
-    }
+    lb.nodesForPartitionedIds(ids, capability)
   }
 
   /**

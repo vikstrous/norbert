@@ -70,8 +70,8 @@ class JavaLbfToScalaLbf[PartitionedId](javaLbf: PartitionedLoadBalancerFactory[P
         }
         sMap
       }
-    }
-    
+   }
+
   }
 
   def getNumPartitions(endpoints: Set[SEndpoint]) = javaLbf.getNumPartitions(endpoints).intValue()

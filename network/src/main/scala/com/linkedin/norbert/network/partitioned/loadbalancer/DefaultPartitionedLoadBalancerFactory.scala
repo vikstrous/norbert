@@ -18,17 +18,22 @@ package network
 package partitioned
 package loadbalancer
 
+import logging.Logging
 import cluster.{Node, InvalidClusterException}
 import common.Endpoint
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
+import scala.util.Random
+import scala.util.control.Breaks._
 
 /**
  * This class is intended for applications where there is a mapping from partitions -> servers able to respond to those requests. Requests are round-robined
  * between the partitions
  */
-abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](numPartitions: Int, serveRequestsIfPartitionMissing: Boolean = true) extends PartitionedLoadBalancerFactory[PartitionedId] {
+abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](numPartitions: Int, serveRequestsIfPartitionMissing: Boolean = true) extends PartitionedLoadBalancerFactory[PartitionedId] with Logging {
   def newLoadBalancer(endpoints: Set[Endpoint]): PartitionedLoadBalancer[PartitionedId] = new PartitionedLoadBalancer[PartitionedId] with DefaultLoadBalancerHelper {
     val partitionToNodeMap = generatePartitionToNodeMap(endpoints, numPartitions, serveRequestsIfPartitionMissing)
+
+    val setCoverCounter = new AtomicInteger(0)
 
     def nextNode(id: PartitionedId, capability: Option[Long] = None) = nodeForPartition(partitionForId(id), capability)
 
@@ -59,7 +64,95 @@ abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](numPartition
           throw new InvalidClusterException("Partition %s is unavailable, cannot serve requests.".format(partition))
       }
     }
+
+    /**
+     * Use greedy set cover to minimize the nodes that serve the requested partitioned Ids
+     *
+     * @param partitionedIds
+     * @param capability
+     * @return
+     */
+    override def nodesForPartitionedIds(partitionedIds: Set[PartitionedId], capability: Option[Long]) = {
+
+      // calculates partition Ids from the set of partitioned Ids
+      val partitionsMap = partitionedIds.foldLeft(Map.empty[Int, Set[PartitionedId]])
+      { case (map, id) =>
+        val partition = partitionForId(id)
+        map + (partition -> (map.getOrElse(partition, Set.empty[PartitionedId]) + id))
+      }
+
+      // set to be covered
+      var partitionIds = partitionsMap.keys.toSet[Int]
+      val res = collection.mutable.Map.empty[Node, collection.Set[Int]]
+
+      breakable {
+        while (!partitionIds.isEmpty) {
+          var intersect = Set.empty[Int]
+          var endpoint : Endpoint =  null
+
+          // take one element in the set, locate only nodes that serving this partition
+          partitionToNodeMap.get(partitionIds.head) match {
+            case None =>
+              break
+            case Some((endpoints, counter, states)) =>
+              import math._
+              val es = endpoints.size
+              counter.compareAndSet(java.lang.Integer.MAX_VALUE, 0)
+              val idx = counter.getAndIncrement % es
+              var i = idx
+
+              // This is a modified version of greedy set cover algorithm, instead of finding the node that covers most of
+              // the partitionIds set, we only check it across nodes that serving the selected partition. This guarantees
+              // we will pick a node at least cover 1 more partition, but also in case of multiple replicas of partitions,
+              // this helps to locate nodes long to the same replica.
+              breakable {
+                do {
+                  val ep = endpoints(i)
+
+                  // perform intersection between the set to be covered and the set the node is covering
+                  val s = ep.node.partitionIds intersect partitionIds
+
+                  // record the largest intersect
+                  if (s.size > intersect.size && ep.canServeRequests && ep.node.isCapableOf(capability))
+                  {
+                    intersect = s
+                    endpoint = ep
+                    if (partitionIds.size == s.size)
+                      break
+                  }
+                  i = (i+1 ) % es
+                } while(i != idx)
+              }
+          }
+
+          if (endpoint == null)
+          {
+            if (serveRequestsIfPartitionMissing)
+            {
+              intersect = intersect + partitionIds.head
+            }
+            else
+              throw new NoNodesAvailableException("Unable to satisfy request, no node available for partition Id %s".format(partitionIds.head))
+          } else
+            res += (endpoint.node -> intersect)
+
+          // remove covered set; remove the node providing that coverage
+          partitionIds = ( partitionIds -- intersect)
+        }
+      }
+
+      res.foldLeft(Map.empty[Node, Set[PartitionedId]]) {
+        case (map, (n, pIds)) =>
+        {
+          map + (n -> pIds.foldLeft(Set.empty[PartitionedId]) {
+            case (s, pId) =>
+              s ++ partitionsMap.getOrElse(pId, Set.empty[PartitionedId])
+          })
+        }
+      }
+    }
   }
+
   /**
    * Calculates the id of the partition on which the specified <code>Id</code> resides.
    *
@@ -82,4 +175,5 @@ abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](numPartition
   protected def calculateHash(id: PartitionedId): Int
 
   def getNumPartitions(endpoints: Set[Endpoint]): Int
+
 }
