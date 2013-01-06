@@ -150,13 +150,17 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
     // Attempt to filter out results that are not available
     for(Map.Entry<Endpoint, Set<Integer>> entry : replica.entrySet())
     {
-      if(entry.getKey().canServeRequests() && entry.getKey().getNode().isCapableOf(capability))
+
+      Node node = entry.getKey().getNode();
+      Set<Integer> partitionsToServe = entry.getValue();
+
+      if(entry.getKey().canServeRequests() && node.isCapableOf(capability))
       {
-        results.put(entry.getKey().getNode(), entry.getValue());
+        results.put(node, new HashSet<Integer>(partitionsToServe));
       }
       else
       {
-        unsatisfiedPartitions.addAll(entry.getValue());
+        unsatisfiedPartitions.addAll(partitionsToServe);
       }
     }
 
