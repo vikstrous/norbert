@@ -35,7 +35,7 @@ public class ConsistentHashPartitionedLoadBalancerFactory<PartitionedId> impleme
       throws InvalidClusterException
   {
     PartitionedLoadBalancer<PartitionedId> inner = _fallThrough == null ? null : _fallThrough.newLoadBalancer(endpoints);
-    return new ConsistentHashPartitionedLoadBalancer<PartitionedId>(_bucketCount, _hashFunction, endpoints, inner);
+    return ConsistentHashPartitionedLoadBalancer.build(_bucketCount, _hashFunction, endpoints, inner);
   }
 
   @Override
