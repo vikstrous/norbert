@@ -99,7 +99,7 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
     return new ConsistentHashPartitionedLoadBalancer<PartitionedId>(hashFunction, routingMap, fallThrough);
   }
 
-  @Override
+  @Override 
   public Node nextNode(PartitionedId partitionedId)
   {
     if(_fallThrough != null)
@@ -120,13 +120,17 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
     // Attempt to filter out results that are not available
     for(Map.Entry<Endpoint, Set<Integer>> entry : replica.entrySet())
     {
+
+      Node node = entry.getKey().getNode();
+      Set<Integer> partitionsToServe = entry.getValue();
+
       if(entry.getKey().canServeRequests())
       {
-        results.put(entry.getKey().getNode(), entry.getValue());
+        results.put(node, new HashSet<Integer>(partitionsToServe));
       }
       else
       {
-        unsatisfiedPartitions.addAll(entry.getValue());
+        unsatisfiedPartitions.addAll(partitionsToServe);
       }
     }
 
