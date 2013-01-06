@@ -15,14 +15,16 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
   private final TreeMap<Long, Map<Endpoint, Set<Integer>>> _routingMap;
   private final PartitionedLoadBalancer<PartitionedId> _fallThrough;
 
-  ConsistentHashPartitionedLoadBalancer(int bucketCount,
-                                        HashFunction<String> hashFunction,
-                                        Set<Endpoint> endpoints,
-                                        PartitionedLoadBalancer<PartitionedId> fallThrough)
-  {
-    _hashFunction = hashFunction;
-    _routingMap = new TreeMap<Long, Map<Endpoint, Set<Integer>>>();
-    _fallThrough = fallThrough;
+  public ConsistentHashPartitionedLoadBalancer(HashFunction<String> _hashFunction, TreeMap<Long, Map<Endpoint, Set<Integer>>> _routingMap, PartitionedLoadBalancer<PartitionedId> _fallThrough) {
+    this._hashFunction = _hashFunction;
+    this._routingMap = _routingMap;
+    this._fallThrough = _fallThrough;
+  }
+
+  public static <PartitionedId> ConsistentHashPartitionedLoadBalancer<PartitionedId> build(int bucketCount,
+                                                            HashFunction<String> hashFunction,
+                                                            Set<Endpoint> endpoints,
+                                                            PartitionedLoadBalancer<PartitionedId> fallThrough) {
 
     // Gather set of nodes for each partition
     Map<Integer, Set<Endpoint>> partitionNodes = new TreeMap<Integer, Set<Endpoint>>();
@@ -47,13 +49,7 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
     for (Map.Entry<Integer, Set<Endpoint>> entry : partitionNodes.entrySet())
     {
       Integer partId = entry.getKey();
-      NavigableMap<Long, Endpoint> ring = rings.get(partId);
-      if (ring == null)
-      {
-        ring = new TreeMap<Long, Endpoint>();
-        rings.put(partId, ring);
-      }
-
+      NavigableMap<Long, Endpoint> ring = new TreeMap<Long, Endpoint>();
       if (maxSize < entry.getValue().size())
       {
         maxSize = entry.getValue().size();
@@ -69,9 +65,14 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
           ring.put(hashFunction.hash(String.format("node-%d-%d", endpoint.getNode().getId(), i)), endpoint);
         }
       }
+
+      rings.put(partId, ring);
     }
 
     // Build one final ring.
+
+    TreeMap<Long, Map<Endpoint, Set<Integer>>> routingMap = new TreeMap<Long, Map<Endpoint, Set<Integer>>>();
+
     for (int slot = 0; slot < bucketCount * maxSize; slot++)
     {
       Long point = hashFunction.hash(String.format("ring-%d", slot));
@@ -80,18 +81,22 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
       Map<Endpoint, Set<Integer>> pointRoute = new HashMap<Endpoint, Set<Integer>>();
       for (Map.Entry<Integer, NavigableMap<Long, Endpoint>> ringEntry : rings.entrySet())
       {
-        Endpoint endpoint = lookup(ringEntry.getValue(), point);
+        Integer partitionId = ringEntry.getKey();
+        NavigableMap<Long, Endpoint> ring = ringEntry.getValue();
+        Endpoint endpoint = lookup(ring, point);
 
         Set<Integer> partitionSet = pointRoute.get(endpoint);
         if (partitionSet == null)
         {
           partitionSet = new HashSet<Integer>();
-          pointRoute.put(endpoint, partitionSet);
         }
-        partitionSet.add(ringEntry.getKey()); // Add partition to the node
+        partitionSet.add(partitionId); // Add partition to the node
+        pointRoute.put(endpoint, partitionSet);
       }
-      _routingMap.put(point, pointRoute);
+      routingMap.put(point, pointRoute);
     }
+
+    return new ConsistentHashPartitionedLoadBalancer<PartitionedId>(hashFunction, routingMap, fallThrough);
   }
 
   @Override
@@ -206,15 +211,18 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
   }
 
 
-  private <K, V> V lookup(NavigableMap<K, V> ring, K key)
+  private static <K, V> V lookup(NavigableMap<K, V> ring, K key)
   {
-    V result = ring.get(key);
+    final V result = ring.get(key);
     if (result == null)
     {       // Not a direct match
       Map.Entry<K, V> entry = ring.ceilingEntry(key);
-      result = (entry == null) ? ring.firstEntry().getValue() : entry.getValue();
+      if(entry == null)
+        return ring.firstEntry().getValue();
+      else
+        return entry.getValue();
+    } else {
+     return result;
     }
-
-    return result;
   }
 }
