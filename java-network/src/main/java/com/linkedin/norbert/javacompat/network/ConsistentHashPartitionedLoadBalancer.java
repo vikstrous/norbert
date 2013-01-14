@@ -1,6 +1,7 @@
 package com.linkedin.norbert.javacompat.network;
 
 import com.linkedin.norbert.javacompat.cluster.Node;
+import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -9,16 +10,20 @@ import java.util.Set;
 import java.util.TreeMap;
 
 
+
 public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements PartitionedLoadBalancer<PartitionedId>
 {
   private final HashFunction<String> _hashFunction;
+  private final Map<Integer, NavigableMap<Long, Endpoint>> _rings;
   private final TreeMap<Long, Map<Endpoint, Set<Integer>>> _routingMap;
-  private final PartitionedLoadBalancer<PartitionedId> _fallThrough;
 
-  public ConsistentHashPartitionedLoadBalancer(HashFunction<String> _hashFunction, TreeMap<Long, Map<Endpoint, Set<Integer>>> _routingMap, PartitionedLoadBalancer<PartitionedId> _fallThrough) {
-    this._hashFunction = _hashFunction;
-    this._routingMap = _routingMap;
-    this._fallThrough = _fallThrough;
+  public ConsistentHashPartitionedLoadBalancer(HashFunction<String> hashFunction,
+                                               Map<Integer, NavigableMap<Long, Endpoint>> rings,
+                                               TreeMap<Long, Map<Endpoint, Set<Integer>>> routingMap,
+                                               PartitionedLoadBalancer<PartitionedId> fallThrough) {
+    this._hashFunction = hashFunction;
+    this._rings = rings;
+    this._routingMap = routingMap;
   }
 
   public static <PartitionedId> ConsistentHashPartitionedLoadBalancer<PartitionedId> build(int bucketCount,
@@ -83,7 +88,7 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
       {
         Integer partitionId = ringEntry.getKey();
         NavigableMap<Long, Endpoint> ring = ringEntry.getValue();
-        Endpoint endpoint = lookup(ring, point);
+        Endpoint endpoint = lookup(ring, point).getValue();
 
         Set<Integer> partitionSet = pointRoute.get(endpoint);
         if (partitionSet == null)
@@ -96,23 +101,28 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
       routingMap.put(point, pointRoute);
     }
 
-    return new ConsistentHashPartitionedLoadBalancer<PartitionedId>(hashFunction, routingMap, fallThrough);
+    return new ConsistentHashPartitionedLoadBalancer<PartitionedId>(hashFunction, rings, routingMap, fallThrough);
   }
 
   @Override 
   public Node nextNode(PartitionedId partitionedId)
   {
-    if(_fallThrough != null)
-      return _fallThrough.nextNode(partitionedId);
-
-    // TODO: How do we choose which node to return if we don't want to throw Exception?
-    throw new UnsupportedOperationException();
+    long hash = _hashFunction.hash(partitionedId.toString());
+    long partitionId = (int)(Math.abs(hash) % _rings.size());
+    NavigableMap<Long, Endpoint> ring = _rings.get(partitionId);
+    Endpoint endpoint = searchWheel(ring, hash, new Function<Endpoint, Boolean>() {
+      @Override
+      public Boolean apply(Endpoint key) {
+        return key.canServeRequests();
+      }
+    });
+    return endpoint.getNode();
   }
 
   @Override
   public Map<Node, Set<Integer>> nodesForOneReplica(PartitionedId partitionedId)
   {
-    Map<Endpoint, Set<Integer>> replica = lookup(_routingMap, _hashFunction.hash(partitionedId.toString()));
+    Map<Endpoint, Set<Integer>> replica = lookup(_routingMap, _hashFunction.hash(partitionedId.toString())).getValue();
     Map<Node, Set<Integer>> results = new HashMap<Node, Set<Integer>>();
 
     Set<Integer> unsatisfiedPartitions = new HashSet<Integer>();
@@ -137,7 +147,7 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
 
     if(unsatisfiedPartitions.size() > 0)
     {
-      Map<Node, Set<Integer>> resolved = _fallThrough.nodesForPartitions(partitionedId, unsatisfiedPartitions);
+      Map<Node, Set<Integer>> resolved = nodesForPartitions(partitionedId, unsatisfiedPartitions);
       for(Map.Entry<Node, Set<Integer>> entry : resolved.entrySet())
       {
         Set<Integer> partitions = results.get(entry.getKey());
@@ -157,40 +167,70 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
 
   @Override
   public Map<Node, Set<Integer>> nodesForPartitions(PartitionedId partitionedId, Set<Integer> partitions) {
-    Map<Node, Set<Integer>> entireReplica = nodesForOneReplica(partitionedId);
-
-    Map<Node, Set<Integer>> result = new HashMap<Node, Set<Integer>>();
-    for(Map.Entry<Node, Set<Integer>> entry : entireReplica.entrySet())
+    Map<Node, Set<Integer>> nodes = new HashMap<Node, Set<Integer>>();
+    for(int partition : partitions)
     {
-      Set<Integer> localPartitions = entry.getValue();
-      Set<Integer> partitionsToUse = new HashSet<Integer>(localPartitions.size());
-      for(Integer localPartition : localPartitions)
-      {
-        if(partitions.contains(localPartition))
-          partitionsToUse.add(localPartition);
-      }
+      NavigableMap<Long, Endpoint> ring = _rings.get(partition);
+      Endpoint endpoint = searchWheel(ring, _hashFunction.hash(partitionedId.toString()), new Function<Endpoint, Boolean>() {
+        @Override
+        public Boolean apply(Endpoint key) {
+          return key.canServeRequests();
+        }
+      });
 
-      if(!localPartitions.isEmpty())
-      {
-        result.put(entry.getKey(), localPartitions);
-      }
+      Node node = endpoint.getNode();
+      Set<Integer> partitionsForNode = nodes.get(node);
+      if(partitionsForNode == null)
+        partitionsForNode = new HashSet<Integer>();
+
+      partitionsForNode.add(partition);
+      nodes.put(node, partitionsForNode);
     }
-    return result;
+
+    return nodes;
   }
 
+  public static interface Function<K, V> {
+    public V apply(K key);
+  }
 
-  private static <K, V> V lookup(NavigableMap<K, V> ring, K key)
+  private static <K, V> V searchWheel(NavigableMap<K, V> ring, K key, Function<V, Boolean> predicate)
+  {
+    if(ring.isEmpty())
+      return null;
+
+    final Map.Entry<K, V> original = lookup(ring, key);
+    Map.Entry<K, V> candidate = original;
+    do {
+      if(predicate.apply(candidate.getValue()))
+        return candidate.getValue();
+
+      candidate = rotateWheel(ring, candidate.getKey());
+    } while(candidate != original);
+
+    return candidate.getValue();
+  }
+
+  private static <K, V> Map.Entry<K, V> rotateWheel(NavigableMap<K, V> ring, K key)
+  {
+    Map.Entry<K, V> nextEntry = ring.higherEntry(key);
+    if(nextEntry == null)
+      return ring.firstEntry();
+    return nextEntry;
+  }
+
+  private static <K, V> Map.Entry<K, V> lookup(NavigableMap<K, V> ring, K key)
   {
     final V result = ring.get(key);
     if (result == null)
     {       // Not a direct match
       Map.Entry<K, V> entry = ring.ceilingEntry(key);
       if(entry == null)
-        return ring.firstEntry().getValue();
+        return ring.firstEntry();
       else
-        return entry.getValue();
+        return entry;
     } else {
-     return result;
+      return new AbstractMap.SimpleEntry<K, V>(key, result);
     }
   }
 }
