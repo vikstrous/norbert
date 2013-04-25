@@ -78,7 +78,7 @@ trait DefaultLoadBalancerHelper extends LoadBalancerHelpers with Logging {
    * @return <code>Some</code> with the <code>Node</code> which can service the partition id, <code>None</code>
    * if there are no available <code>Node</code>s for the partition requested
    */
-  protected def nodeForPartition(partitionId: Int, capability: Option[Long] = None): Option[Node] = {
+  protected def nodeForPartition(partitionId: Int, capability: Option[Long] = None, permanentCapability: Option[Long] = None): Option[Node] = {
     partitionToNodeMap.get(partitionId) match {
       case None =>
         return None
@@ -90,7 +90,7 @@ trait DefaultLoadBalancerHelper extends LoadBalancerHelpers with Logging {
         var i = idx
         do {
           val endpoint = endpoints(i % es)
-          if(endpoint.canServeRequests && endpoint.node.isCapableOf(capability))
+          if(endpoint.canServeRequests && endpoint.node.isCapableOf(capability, permanentCapability))
             if (states(i % es).compareAndSet(true, false))
               return Some(endpoint.node)
             else if ((i - idx) >= es)

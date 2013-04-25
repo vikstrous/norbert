@@ -46,11 +46,11 @@ public class RingHashPartitionedLoadBalancer implements PartitionedLoadBalancer<
   }
 
   public Node nextNode(Integer partitionedId) {
-    return nextNode(partitionedId, 0L);
+    return nextNode(partitionedId, 0L, 0L);
   }
 
   @Override
-  public Node nextNode(Integer partitionedId, Long capability) {
+  public Node nextNode(Integer partitionedId, Long capability, Long permanentCapability) {
     if (nodeCircleMap.isEmpty())
       return null;
 
@@ -63,7 +63,7 @@ public class RingHashPartitionedLoadBalancer implements PartitionedLoadBalancer<
 
     do {
       Node node = endpoint.getNode();
-      if(endpoint.canServeRequests() && node.isCapableOf(capability)) {
+      if(endpoint.canServeRequests() && node.isCapableOf(capability, permanentCapability)) {
         if (log.isDebugEnabled())
           log.debug(partitionedId + " is sent to node " + node.getId());
         return node;
@@ -86,7 +86,7 @@ public class RingHashPartitionedLoadBalancer implements PartitionedLoadBalancer<
   }
   
   @Override
-  public Set<Node> nodesForPartitionedId(Integer partitionedId, Long capability) {
+  public Set<Node> nodesForPartitionedId(Integer partitionedId, Long capability, Long permanentCapability) {
     throw new UnsupportedOperationException();
   }
   
@@ -96,7 +96,7 @@ public class RingHashPartitionedLoadBalancer implements PartitionedLoadBalancer<
   }
 
   @Override
-  public Map<Node, Set<Integer>> nodesForOneReplica(Integer partitionedId, Long capability) {
+  public Map<Node, Set<Integer>> nodesForOneReplica(Integer partitionedId, Long capability, Long permanentCapability ) {
     throw new UnsupportedOperationException();
   }
   
@@ -106,7 +106,7 @@ public class RingHashPartitionedLoadBalancer implements PartitionedLoadBalancer<
   }
 
   @Override
-  public Map<Node, Set<Integer>> nodesForPartitions(Integer integer, Set<Integer> partitions, Long capability) {
+  public Map<Node, Set<Integer>> nodesForPartitions(Integer integer, Set<Integer> partitions, Long capability, Long permanentCapability) {
     throw new UnsupportedOperationException();
   }
 }

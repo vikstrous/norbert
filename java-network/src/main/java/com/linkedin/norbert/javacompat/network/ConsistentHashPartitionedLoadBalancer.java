@@ -102,14 +102,14 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
   @Override
   public Node nextNode(PartitionedId partitionedId)
   {
-    return nextNode(partitionedId, 0L);
+    return nextNode(partitionedId, 0L, 0L);
   }
   
   @Override 
-  public Node nextNode(PartitionedId partitionedId, Long capability)
+  public Node nextNode(PartitionedId partitionedId, Long capability, Long permanentCapability)
   {
     if(_fallThrough != null)
-      return _fallThrough.nextNode(partitionedId, capability);
+      return _fallThrough.nextNode(partitionedId, capability, permanentCapability);
 
     // TODO: How do we choose which node to return if we don't want to throw Exception?
     throw new UnsupportedOperationException();
@@ -125,10 +125,10 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
   }
 
   @Override
-  public Set<Node> nodesForPartitionedId(PartitionedId partitionedId, Long capability)
+  public Set<Node> nodesForPartitionedId(PartitionedId partitionedId, Long capability, Long permanentCapability)
   {
     if (_fallThrough != null)
-      return _fallThrough.nodesForPartitionedId(partitionedId, capability);
+      return _fallThrough.nodesForPartitionedId(partitionedId, capability, permanentCapability);
 
     throw new UnsupportedOperationException();
   }
@@ -136,11 +136,11 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
   @Override
   public Map<Node, Set<Integer>> nodesForOneReplica(PartitionedId partitionedId)
   {
-    return nodesForOneReplica(partitionedId, 0L);
+    return nodesForOneReplica(partitionedId, 0L, 0L);
   }
 
   @Override
-  public Map<Node, Set<Integer>> nodesForOneReplica(PartitionedId partitionedId, Long capability)
+  public Map<Node, Set<Integer>> nodesForOneReplica(PartitionedId partitionedId, Long capability, Long permanentCapability)
   {
     Map<Endpoint, Set<Integer>> replica = lookup(_routingMap, _hashFunction.hash(partitionedId.toString()));
     Map<Node, Set<Integer>> results = new HashMap<Node, Set<Integer>>();
@@ -154,7 +154,7 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
       Node node = entry.getKey().getNode();
       Set<Integer> partitionsToServe = entry.getValue();
 
-      if(entry.getKey().canServeRequests() && node.isCapableOf(capability))
+      if(entry.getKey().canServeRequests() && node.isCapableOf(capability, permanentCapability))
       {
         results.put(node, new HashSet<Integer>(partitionsToServe));
       }
@@ -167,7 +167,7 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
 
     if(unsatisfiedPartitions.size() > 0)
     {
-      Map<Node, Set<Integer>> resolved = _fallThrough.nodesForPartitions(partitionedId, unsatisfiedPartitions, capability);
+      Map<Node, Set<Integer>> resolved = _fallThrough.nodesForPartitions(partitionedId, unsatisfiedPartitions, capability, permanentCapability);
       for(Map.Entry<Node, Set<Integer>> entry : resolved.entrySet())
       {
         Set<Integer> partitions = results.get(entry.getKey());
@@ -187,13 +187,13 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
 
   @Override
   public Map<Node, Set<Integer>> nodesForPartitions(PartitionedId partitionedId, Set<Integer> partitions) {
-    return nodesForPartitions(partitionedId, partitions, 0L);
+    return nodesForPartitions(partitionedId, partitions, 0L, 0L);
   }
 
 
   @Override
-  public Map<Node, Set<Integer>> nodesForPartitions(PartitionedId partitionedId, Set<Integer> partitions, Long capability) {
-    Map<Node, Set<Integer>> entireReplica = nodesForOneReplica(partitionedId, capability);
+  public Map<Node, Set<Integer>> nodesForPartitions(PartitionedId partitionedId, Set<Integer> partitions, Long capability, Long permanentCapability) {
+    Map<Node, Set<Integer>> entireReplica = nodesForOneReplica(partitionedId, capability, permanentCapability);
 
     Map<Node, Set<Integer>> result = new HashMap<Node, Set<Integer>>();
     for(Map.Entry<Node, Set<Integer>> entry : entireReplica.entrySet())

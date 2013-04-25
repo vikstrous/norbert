@@ -70,10 +70,12 @@ class NettyNetworkClient(config: NetworkClientConfig, loadBalancerFactory: LoadB
   val lbf = new SLoadBalancerFactory {
     def newLoadBalancer(endpoints: Set[SEndpoint]) = new SLoadBalancer {
       private val lb = loadBalancerFactory.newLoadBalancer(endpoints)
-
-      def nextNode(capability: Option[Long]) = Option(capability match {
-                                                        case Some(c) => lb.nextNode(c.longValue)
-                                                        case None => lb.nextNode
+//TODO fix this for permanentCapability
+      def nextNode(capability: Option[Long], permanentCapability: Option[Long]) = Option((capability,permanentCapability) match {
+                                                        case (Some(c),Some(pc)) => lb.nextNode(c.longValue, pc.longValue)
+                                                        case (Some(c), None) => lb.nextNode(c.longValue, 0L)
+                                                        case (None, Some(pc)) => lb.nextNode(0L, pc.longValue)
+                                                        case (None, None) => lb.nextNode
                                                       })
     }
   }

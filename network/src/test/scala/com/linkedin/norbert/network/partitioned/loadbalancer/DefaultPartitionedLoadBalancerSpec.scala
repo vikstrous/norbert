@@ -57,7 +57,7 @@ class TestSetCoverPartitionedLoadBalancer extends Specification {
   "Set cover load balancer" should {
     "nodesForPartitions returns nodes cover the input partitioned Ids" in {
       val loadbalancer = loadBalancerFactory.newLoadBalancer(toEndpoints(nodes))
-      val res = loadbalancer.nodesForPartitionedIds(Set(0,1,3,4), Some(0L))
+      val res = loadbalancer.nodesForPartitionedIds(Set(0,1,3,4), Some(0L), Some(0L))
       res.values.flatten.toSet must be_==(Set(1, 0, 3, 4))
     }
 
@@ -68,20 +68,20 @@ class TestSetCoverPartitionedLoadBalancer extends Specification {
       markUnavailable(endpoints, 5)
 
       val loadbalancer = loadBalancerFactory.newLoadBalancer(endpoints)
-      val res = loadbalancer.nodesForPartitionedIds(Set(3,5), Some(0L))
+      val res = loadbalancer.nodesForPartitionedIds(Set(3,5), Some(0L), Some(0L))
       res must be_== (Map())
     }
 
     "throw NoNodeAvailable if partition is missing and serveRequestsIfPartitionMissing set to false" in {
       val endpoints = toEndpoints(nodes)
       val loadbalancer = new TestLBF(6, false).newLoadBalancer(endpoints)
-      val res = loadbalancer.nodesForPartitionedIds(Set(1,3,4,5), Some(0L))
+      val res = loadbalancer.nodesForPartitionedIds(Set(1,3,4,5), Some(0L), Some(0L))
       res.values.flatten.toSet must be_==(Set(1,3,4,5))
 
       markUnavailable(endpoints, 1)
       markUnavailable(endpoints, 3)
       markUnavailable(endpoints, 5)
-      loadbalancer.nodesForPartitionedIds(Set(1,3,4,5), Some(0L)) must throwA[NoNodesAvailableException]
+      loadbalancer.nodesForPartitionedIds(Set(1,3,4,5), Some(0L), Some(0L)) must throwA[NoNodesAvailableException]
     }
 
   }

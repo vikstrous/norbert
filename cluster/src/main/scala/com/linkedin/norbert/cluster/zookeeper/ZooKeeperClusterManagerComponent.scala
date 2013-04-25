@@ -23,6 +23,8 @@ import actors.Actor
 import Actor._
 import java.io.IOException
 import org.apache.zookeeper._
+import protos.NorbertProtos
+import com.sun.xml.internal.ws.resources.SoapMessages
 
 trait ZooKeeperClusterManagerComponent extends ClusterManagerComponent {
   this: ClusterNotificationManagerComponent =>

@@ -77,7 +77,7 @@ class RoundRobinLoadBalancerFactorySpec extends Specification {
     }
 
     "Not route to node cannot fulfill capability" in {
-      val nodes = for (i <- 0 until 4) yield Node(i, "localhost:3131" + i,  true, Set.empty[Int], Some(i))
+      val nodes = for (i <- 0 until 4) yield Node(i, "localhost:3131" + i,  true, Set.empty[Int], Some(i), Some(i))
 
       val endpoints = nodes.map(n => new Endpoint {
         def node = n
@@ -94,7 +94,7 @@ class RoundRobinLoadBalancerFactorySpec extends Specification {
       }
 
       for(i <- 0 until 8) {
-        val node = lb.nextNode(Some(1)).get
+        val node = lb.nextNode(Some(1), Some(1)).get
         val nodeId = ((i % 2) << 1) | 1
         node must be_==(Node(nodeId, "localhost:3131" + nodeId, true))
       }

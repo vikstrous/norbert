@@ -85,28 +85,28 @@ class PartitionedConsistentHashedLoadBalancer[PartitionedId](numPartitions: Int,
   val partitionToNodeMap = generatePartitionToNodeMap(endpoints, numPartitions, serveRequestsIfPartitionMissing)
   val partitionIds = wheels.keySet.toSet
 
-  def nodesForOneReplica(id: PartitionedId, capability: Option[Long] = None) = {
-    nodesForPartitions(id, wheels, capability)
+  def nodesForOneReplica(id: PartitionedId, capability: Option[Long] = None, permanentCapability: Option[Long]) = {
+    nodesForPartitions(id, wheels, capability, permanentCapability)
   }
 
-  def nodesForPartitionedId(id: PartitionedId, capability: Option[Long] = None) = {
+  def nodesForPartitionedId(id: PartitionedId, capability: Option[Long] = None, permanentCapability: Option[Long]) = {
     val hash = hashFn(id)
     val partitionId = hash.abs % numPartitions
-    wheels.get(partitionId).flatMap { wheel => Option(wheel.foldLeft(Set.empty[Node]) { case (set, (p, e)) => if (e.node.isCapableOf(capability)) set + e.node else set }) }.get
+    wheels.get(partitionId).flatMap { wheel => Option(wheel.foldLeft(Set.empty[Node]) { case (set, (p, e)) => if (e.node.isCapableOf(capability, permanentCapability)) set + e.node else set }) }.get
   }
 
-  def nodesForPartitions(id: PartitionedId, partitions: Set[Int], capability: Option[Long] = None) = {
-    nodesForPartitions(id, wheels.filterKeys(partitions contains _), capability)
+  def nodesForPartitions(id: PartitionedId, partitions: Set[Int], capability: Option[Long] = None, permanentCapability: Option[Long]) = {
+    nodesForPartitions(id, wheels.filterKeys(partitions contains _), capability, permanentCapability)
   }
   
-  private def nodesForPartitions(id: PartitionedId, wheels: Map[Int, TreeMap[Int, Endpoint]], capability: Option[Long]) = {
+  private def nodesForPartitions(id: PartitionedId, wheels: Map[Int, TreeMap[Int, Endpoint]], capability: Option[Long], permanentCapability: Option[Long]) = {
     if (id == null) {
-      nodesForPartitions0(partitionToNodeMap filterKeys wheels.containsKey, capability)
+      nodesForPartitions0(partitionToNodeMap filterKeys wheels.containsKey, capability, permanentCapability)
     } else {
       val hash = hashFn(id)
 
       wheels.foldLeft(Map.empty[Node, Set[Int]]) { case (accumulator, (partitionId, wheel)) =>
-        val endpoint = PartitionUtil.searchWheel(wheel, hash, (e: Endpoint) => e.canServeRequests && e.node.isCapableOf(capability) )
+        val endpoint = PartitionUtil.searchWheel(wheel, hash, (e: Endpoint) => e.canServeRequests && e.node.isCapableOf(capability, permanentCapability) )
 
         if(endpoint.isDefined) {
           val node = endpoint.get.node
@@ -117,7 +117,7 @@ class PartitionedConsistentHashedLoadBalancer[PartitionedId](numPartitions: Int,
           log.warn("All nodes appear to be unresponsive for partition %s, selecting the original node."
             .format(partitionId))
 
-          val originalEndpoint = PartitionUtil.searchWheel(wheel, hash, (e: Endpoint) => e.node.isCapableOf(capability))
+          val originalEndpoint = PartitionUtil.searchWheel(wheel, hash, (e: Endpoint) => e.node.isCapableOf(capability, permanentCapability))
           val node = originalEndpoint.get.node
           val partitions = accumulator.getOrElse(node, Set.empty[Int]) + partitionId
           accumulator + (node -> partitions)
@@ -128,9 +128,9 @@ class PartitionedConsistentHashedLoadBalancer[PartitionedId](numPartitions: Int,
     }
   }  
   
-  private def nodesForPartitions0(partitionToNodeMap: Map[Int, (IndexedSeq[Endpoint], AtomicInteger, Array[AtomicBoolean])], capability: Option[Long]) = {
+  private def nodesForPartitions0(partitionToNodeMap: Map[Int, (IndexedSeq[Endpoint], AtomicInteger, Array[AtomicBoolean])], capability: Option[Long], permanentCapability: Option[Long]) = {
     partitionToNodeMap.keys.foldLeft(Map.empty[Node, Set[Int]]) { (map, partition) =>
-      val nodeOption = nodeForPartition(partition, capability)
+      val nodeOption = nodeForPartition(partition, capability, permanentCapability)
       if(nodeOption isDefined) {
         val n = nodeOption.get
         map + (n -> (map.getOrElse(n, Set.empty[Int]) + partition))
@@ -143,11 +143,11 @@ class PartitionedConsistentHashedLoadBalancer[PartitionedId](numPartitions: Int,
   }
   
 
-  def nextNode(id: PartitionedId, capability: Option[Long] = None): Option[Node] = {
+  def nextNode(id: PartitionedId, capability: Option[Long] = None, permanentCapability: Option[Long] = None): Option[Node] = {
     val hash = hashFn(id)
     val partitionId = hash.abs % numPartitions
     wheels.get(partitionId).flatMap { wheel =>
-      PartitionUtil.searchWheel(wheel, hash, (e: Endpoint) => e.canServeRequests && e.node.isCapableOf(capability) )
+      PartitionUtil.searchWheel(wheel, hash, (e: Endpoint) => e.canServeRequests && e.node.isCapableOf(capability, permanentCapability) )
     }.map(_.node)
   }
 

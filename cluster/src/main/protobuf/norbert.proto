@@ -30,4 +30,5 @@ message Node {
   required int32 id = 1;
   required string url = 2;
   repeated int32 partition = 3;
+  optional int64 capability = 4;
 }
