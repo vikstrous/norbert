@@ -29,15 +29,15 @@ object JavaNode {
       if (node.partitionIds != null) {
         node.partitionIds.foreach {id => s.add(id)}
       }
-      JavaNode(node.id, node.url, node.available, s, node.capability, node.permanentCapability)
+      JavaNode(node.id, node.url, node.available, s, node.capability, node.persistentCapability)
     }
   }
 }
 
-case class JavaNode(@BeanProperty id: Int, @BeanProperty url: String, @BeanProperty available: Boolean, @BeanProperty partitionIds: java.util.Set[java.lang.Integer], capability: Option[Long], permanentCapability: Option[Long]) extends Node {
+case class JavaNode(@BeanProperty id: Int, @BeanProperty url: String, @BeanProperty available: Boolean, @BeanProperty partitionIds: java.util.Set[java.lang.Integer], capability: Option[Long], persistentCapability: Option[Long]) extends Node {
   def isAvailable = available
   def isCapableOf(c: java.lang.Long, pc: java.lang.Long) : Boolean =
-    (capability, permanentCapability) match {
+    (capability, persistentCapability) match {
       case (Some(nc), Some(npc)) => ((nc & c.longValue) == c.longValue) && ((npc & pc.longValue) == pc.longValue)
       case (Some(nc), None) => (nc & c.longValue()) == c.longValue()
       case (nc, Some(pc)) => (pc & pc.longValue()) == pc.longValue()

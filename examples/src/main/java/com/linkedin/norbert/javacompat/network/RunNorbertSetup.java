@@ -46,7 +46,7 @@ public class RunNorbertSetup
                     }
 
                     @java.lang.Override
-                    public Node nextNode(Long capability, Long permanentCapability)
+                    public Node nextNode(Long capability, Long persistentCapability)
                     {
                       return endpoints.iterator().next().getNode();
                     }

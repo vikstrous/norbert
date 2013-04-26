@@ -26,7 +26,7 @@ class NodeSpec extends Specification {
       builder.setId(1)
       builder.setUrl("localhost:31313")
       builder.addPartition(0).addPartition(1)
-      builder.setCapability(2L)//right not the only one we care about is 2
+      builder.setPersistentCapability(2L)//right not the only one we care about is 2
       val expectedBytes = builder.build.toByteArray.toList
 
       val nodeBytes = Node.nodeToByteArray(Node(1, "localhost:31313", false, Set(0, 1), Some(0L), Some(2L)))
@@ -38,7 +38,7 @@ class NodeSpec extends Specification {
       builder.setId(1)
       builder.setUrl("localhost:31313")
       builder.addPartition(0).addPartition(1)
-      builder.setCapability(2L)
+      builder.setPersistentCapability(2L)
       val bytes = builder.build.toByteArray
 
       val node = Node(1, "localhost:31313", true, Set(0, 1), Some(0L))

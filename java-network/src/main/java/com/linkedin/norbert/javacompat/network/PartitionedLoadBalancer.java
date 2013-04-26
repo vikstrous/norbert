@@ -46,7 +46,7 @@ public interface PartitionedLoadBalancer<PartitionedId> {
    *
    * @return the <code>Node</code> to route the next message to
    */
-  Node nextNode(PartitionedId id, Long capability, Long permanentCapability);
+  Node nextNode(PartitionedId id, Long capability, Long persistentCapability);
 
   /**
    * Returns all replica nodes for the same partitionedId
@@ -58,7 +58,7 @@ public interface PartitionedLoadBalancer<PartitionedId> {
    * Returns all replica nodes for the same partitionedId
    * @return the <code>Nodes</code> to multicast the next messages to each replica
    */
-  Set<Node> nodesForPartitionedId(PartitionedId id, Long capability, Long permanentCapability);
+  Set<Node> nodesForPartitionedId(PartitionedId id, Long capability, Long persistentCapability);
 
   /**
    * Returns a set of nodes represents one replica of the cluster, this is used by the PartitionedNetworkClient to handle
@@ -74,7 +74,7 @@ public interface PartitionedLoadBalancer<PartitionedId> {
    *
    * @return the set of <code>Nodes</code> to broadcast the next message to a replica to
    */
-  Map<Node, Set<Integer>> nodesForOneReplica(PartitionedId id, Long capability, Long permanentCapability);
+  Map<Node, Set<Integer>> nodesForOneReplica(PartitionedId id, Long capability, Long persistentCapability);
 
   /**
    * Calculates a mapping of nodes to partitions for broadcasting a partitioned request. Optionally uses a partitioned
@@ -90,5 +90,5 @@ public interface PartitionedLoadBalancer<PartitionedId> {
    *
    * @return the <code>Nodes</code> to broadcast the next message to a replica to
    */
-  Map<Node, Set<Integer>> nodesForPartitions(PartitionedId id, Set<Integer> partitions, Long capability, Long permanentCapability);
+  Map<Node, Set<Integer>> nodesForPartitions(PartitionedId id, Set<Integer> partitions, Long capability, Long persistentCapability);
 }

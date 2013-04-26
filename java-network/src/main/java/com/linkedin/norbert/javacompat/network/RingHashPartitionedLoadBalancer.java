@@ -50,7 +50,7 @@ public class RingHashPartitionedLoadBalancer implements PartitionedLoadBalancer<
   }
 
   @Override
-  public Node nextNode(Integer partitionedId, Long capability, Long permanentCapability) {
+  public Node nextNode(Integer partitionedId, Long capability, Long persistentCapability) {
     if (nodeCircleMap.isEmpty())
       return null;
 
@@ -63,7 +63,7 @@ public class RingHashPartitionedLoadBalancer implements PartitionedLoadBalancer<
 
     do {
       Node node = endpoint.getNode();
-      if(endpoint.canServeRequests() && node.isCapableOf(capability, permanentCapability)) {
+      if(endpoint.canServeRequests() && node.isCapableOf(capability, persistentCapability)) {
         if (log.isDebugEnabled())
           log.debug(partitionedId + " is sent to node " + node.getId());
         return node;
@@ -86,7 +86,7 @@ public class RingHashPartitionedLoadBalancer implements PartitionedLoadBalancer<
   }
   
   @Override
-  public Set<Node> nodesForPartitionedId(Integer partitionedId, Long capability, Long permanentCapability) {
+  public Set<Node> nodesForPartitionedId(Integer partitionedId, Long capability, Long persistentCapability) {
     throw new UnsupportedOperationException();
   }
   
@@ -96,7 +96,7 @@ public class RingHashPartitionedLoadBalancer implements PartitionedLoadBalancer<
   }
 
   @Override
-  public Map<Node, Set<Integer>> nodesForOneReplica(Integer partitionedId, Long capability, Long permanentCapability ) {
+  public Map<Node, Set<Integer>> nodesForOneReplica(Integer partitionedId, Long capability, Long persistentCapability ) {
     throw new UnsupportedOperationException();
   }
   
@@ -106,7 +106,7 @@ public class RingHashPartitionedLoadBalancer implements PartitionedLoadBalancer<
   }
 
   @Override
-  public Map<Node, Set<Integer>> nodesForPartitions(Integer integer, Set<Integer> partitions, Long capability, Long permanentCapability) {
+  public Map<Node, Set<Integer>> nodesForPartitions(Integer integer, Set<Integer> partitions, Long capability, Long persistentCapability) {
     throw new UnsupportedOperationException();
   }
 }
