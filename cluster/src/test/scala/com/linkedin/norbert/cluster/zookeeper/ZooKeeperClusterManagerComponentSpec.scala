@@ -26,6 +26,7 @@ import org.specs.util.WaitFor
 import org.apache.zookeeper.data.Stat
 import org.apache.zookeeper._
 import java.util.ArrayList
+import java.util
 
 class ZooKeeperClusterManagerComponentSpec extends Specification with Mockito with WaitFor with ZooKeeperClusterManagerComponent
         with ClusterNotificationManagerComponent {
@@ -124,7 +125,7 @@ class ZooKeeperClusterManagerComponentSpec extends Specification with Mockito wi
 
         mockZooKeeper.getChildren(membershipNode, true) returns membership
         nodes.foreach { node =>
-          mockZooKeeper.getData("%s/%d".format(membershipNode, node.id), false, null) returns Node.nodeToByteArray(node)
+          mockZooKeeper.getData("%s/%d".format(membershipNode, node.id), clusterManager.getWatcher, null) returns Node.nodeToByteArray(node)
         }
         mockZooKeeper.getChildren(availabilityNode, true) returns availability
 
@@ -134,7 +135,7 @@ class ZooKeeperClusterManagerComponentSpec extends Specification with Mockito wi
         got {
           one(mockZooKeeper).getChildren(membershipNode, true)
           nodes.foreach {node =>
-            one(mockZooKeeper).getData("%s/%d".format(membershipNode, node.id), false, null)
+            one(mockZooKeeper).getData("%s/%d".format(membershipNode, node.id), clusterManager.getWatcher, null)
           }
           one(mockZooKeeper).getChildren(availabilityNode, true)
         }
@@ -154,7 +155,7 @@ class ZooKeeperClusterManagerComponentSpec extends Specification with Mockito wi
 
         mockZooKeeper.getChildren(membershipNode, true) returns membership
         nodes.foreach { node =>
-          mockZooKeeper.getData("%s/%d".format(membershipNode, node.id), false, null) returns Node.nodeToByteArray(node)
+          mockZooKeeper.getData("%s/%d".format(membershipNode, node.id), clusterManager.getWatcher, null) returns Node.nodeToByteArray(node)
         }
         mockZooKeeper.getChildren(availabilityNode, true) returns availability
 
@@ -202,6 +203,39 @@ class ZooKeeperClusterManagerComponentSpec extends Specification with Mockito wi
     }
 
     "when a NodeChildrenChanged message is received" in {
+      "and the membership node changed" in {
+        "update the node capability" in {
+          //TODO make sure the capability has changed
+          val membership = new ArrayList[String]
+          membership.add("1")
+
+          val availability = membership.clone.asInstanceOf[ArrayList[String]]
+          val nodes = Array(Node(1, "localhost:31313", true, Set(1, 2), Some(0L), Some(5L)))
+
+          val membershipUpdated = new ArrayList[String]
+          membershipUpdated.add("1")
+          membershipUpdated.add("2")
+          val availabilityUpdated = membershipUpdated.clone().asInstanceOf[util.ArrayList[String]]
+          val nodesUpdated = Array(Node(1, "localhost:31313", true, Set(1, 2), Some(0L), Some(6L)), Node(2, "localhost:31323", true, Set(3,4), Some(0L), Some(7L)))
+
+          mockZooKeeper.getChildren(membershipNode, true) returns membership thenReturns membershipUpdated
+          mockZooKeeper.getData("%s/%d".format(membershipNode, 1), clusterManager.getWatcher, null) returns (Node.nodeToByteArray(nodes(0))) thenReturns (Node.nodeToByteArray(nodesUpdated(0)))
+          mockZooKeeper.getChildren(availabilityNode, true) returns (availability) thenReturns (availabilityUpdated)
+          mockZooKeeper.getData("%s/%d".format(membershipNode, 2), clusterManager.getWatcher, null) returns (Node.nodeToByteArray(nodesUpdated(1)))
+
+          clusterManager ! Connected
+
+          connectedCount must eventually(be_==(1))
+          nodesReceived.size must be_==(1)
+
+          clusterManager ! NodeChildrenChanged(membershipNode)
+
+          nodesReceived.size must eventually(be_==(2))
+          nodesReceived must containAll(nodesUpdated)
+          nodesReceived.foreach { node => node must be_==(nodesUpdated(node.id - 1)) }
+        }
+      }
+
       "and the availability node changed" in {
         "update the node availability and notify listeners" in {
           val membership = new ArrayList[String]
@@ -221,7 +255,7 @@ class ZooKeeperClusterManagerComponentSpec extends Specification with Mockito wi
 
           mockZooKeeper.getChildren(membershipNode, true) returns membership
           nodes.foreach { node =>
-            mockZooKeeper.getData("%s/%d".format(membershipNode, node.id), false, null) returns Node.nodeToByteArray(node)
+            mockZooKeeper.getData("%s/%d".format(membershipNode, node.id), clusterManager.getWatcher, null) returns Node.nodeToByteArray(node)
           }
           mockZooKeeper.getChildren(availabilityNode, true) returns availability thenReturns newAvailability
 
@@ -258,7 +292,7 @@ class ZooKeeperClusterManagerComponentSpec extends Specification with Mockito wi
 
           mockZooKeeper.getChildren(membershipNode, true) returns membership
           nodes.foreach { node =>
-            mockZooKeeper.getData("%s/%d".format(membershipNode, node.id), false, null) returns Node.nodeToByteArray(node)
+            mockZooKeeper.getData("%s/%d".format(membershipNode, node.id), clusterManager.getWatcher, null) returns Node.nodeToByteArray(node)
           }
           mockZooKeeper.getChildren(availabilityNode, true) returns membership thenReturns newAvailability
 
@@ -301,7 +335,7 @@ class ZooKeeperClusterManagerComponentSpec extends Specification with Mockito wi
 
           mockZooKeeper.getChildren(membershipNode, true) returns membership thenReturns newMembership
           updatedNodes.foreach { node =>
-            mockZooKeeper.getData("%s/%d".format(membershipNode, node.id), false, null) returns Node.nodeToByteArray(node)
+            mockZooKeeper.getData("%s/%d".format(membershipNode, node.id), clusterManager.getWatcher, null) returns Node.nodeToByteArray(node)
           }
           mockZooKeeper.getChildren(availabilityNode, true) returns membership
 
@@ -337,7 +371,7 @@ class ZooKeeperClusterManagerComponentSpec extends Specification with Mockito wi
 
           mockZooKeeper.getChildren(membershipNode, true) returns membership thenReturns newMembership
           nodes.foreach { node =>
-            mockZooKeeper.getData("%s/%d".format(membershipNode, node.id), false, null) returns Node.nodeToByteArray(node)
+            mockZooKeeper.getData("%s/%d".format(membershipNode, node.id), clusterManager.getWatcher, null) returns Node.nodeToByteArray(node)
           }
           mockZooKeeper.getChildren(availabilityNode, true) returns membership
 
@@ -371,7 +405,7 @@ class ZooKeeperClusterManagerComponentSpec extends Specification with Mockito wi
 
           mockZooKeeper.getChildren(membershipNode, true) returns membership thenReturns newMembership
           nodes.foreach { node =>
-            mockZooKeeper.getData("%s/%d".format(membershipNode, node.id), false, null) returns Node.nodeToByteArray(node)
+            mockZooKeeper.getData("%s/%d".format(membershipNode, node.id), clusterManager.getWatcher, null) returns Node.nodeToByteArray(node)
           }
           mockZooKeeper.getChildren(availabilityNode, true) returns membership
 
@@ -513,7 +547,7 @@ class ZooKeeperClusterManagerComponentSpec extends Specification with Mockito wi
 
         mockZooKeeper.getChildren(membershipNode, true) returns membership
         nodes.foreach { node =>
-          mockZooKeeper.getData("%s/%d".format(membershipNode, node.id), false, null) returns Node.nodeToByteArray(node)
+          mockZooKeeper.getData("%s/%d".format(membershipNode, node.id), clusterManager.getWatcher, null) returns Node.nodeToByteArray(node)
         }
         mockZooKeeper.getChildren(availabilityNode, true) returns availability
 
@@ -584,7 +618,7 @@ class ZooKeeperClusterManagerComponentSpec extends Specification with Mockito wi
 
         mockZooKeeper.getChildren(membershipNode, true) returns membership
         nodes.foreach { node =>
-          mockZooKeeper.getData("%s/%d".format(membershipNode, node.id), false, null) returns Node.nodeToByteArray(node)
+          mockZooKeeper.getData("%s/%d".format(membershipNode, node.id), clusterManager.getWatcher, null) returns Node.nodeToByteArray(node)
         }
         mockZooKeeper.getChildren(availabilityNode, true) returns availability
 
@@ -650,7 +684,7 @@ class ZooKeeperClusterManagerComponentSpec extends Specification with Mockito wi
 
         mockZooKeeper.getChildren(membershipNode, true) returns membership
         nodes.foreach { node =>
-          mockZooKeeper.getData("%s/%d".format(membershipNode, node.id), false, null) returns Node.nodeToByteArray(node)
+          mockZooKeeper.getData("%s/%d".format(membershipNode, node.id), clusterManager.getWatcher, null) returns Node.nodeToByteArray(node)
         }
         mockZooKeeper.getChildren(availabilityNode, true) returns availability
 
@@ -710,6 +744,92 @@ class ZooKeeperClusterManagerComponentSpec extends Specification with Mockito wi
         there was no(mockZooKeeper).setData(availabilityNode + "/1", Array[Byte](0), -1)
       }
 
+      "when we initialize data we read in the permanent capabilities correctly from zookeeper" in {
+        val membership = new ArrayList[String]
+        membership.add("1")
+
+        val availability = membership.clone.asInstanceOf[ArrayList[String]]
+        val nodes = Array(Node(1, "localhost:31313", true, Set(1, 2), Some(0L), Some(5L)))
+
+        mockZooKeeper.getChildren(membershipNode, true) returns membership
+        nodes.foreach { node =>
+          mockZooKeeper.getData("%s/%d".format(membershipNode, node.id), clusterManager.getWatcher, null) returns Node.nodeToByteArray(node)
+        }
+        mockZooKeeper.getChildren(availabilityNode, true) returns availability
+
+        clusterManager ! Connected
+
+        connectedCount must eventually(be_==(1))
+        nodesReceived.size must be_==(1)
+        nodesReceived must containAll(nodes)
+        nodesReceived.foreach { node => node must be_==(nodes(node.id - 1)) }
+      }
+
+      "change permanent capability in zookeeper when node is not part of the members" in {
+        val membership = new ArrayList[String]
+        membership.add("1")
+        membership.add("2")
+        membership.add("3")
+
+        val availability = membership.clone.asInstanceOf[ArrayList[String]]
+
+        val nodes = Array(Node(1, "localhost:31313", true, Set(1, 2)),
+          Node(2, "localhost:31314", true, Set(2, 3)), Node(3, "localhost:31315", true, Set(2, 3)))
+
+        mockZooKeeper.getChildren(membershipNode, true) returns membership
+        nodes.foreach { node =>
+          //zk.getData("%s/%s".format(MEMBERSHIP_NODE, memberId),watcher,null)
+          mockZooKeeper.getData("%s/%d".format(membershipNode, node.id), clusterManager.getWatcher, null) returns Node.nodeToByteArray(node)
+        }
+        mockZooKeeper.getChildren(availabilityNode, true) returns availability
+        mockZooKeeper.getData("%s/%d".format(membershipNode, 4), clusterManager.getWatcher, null)
+
+        clusterManager ! Connected
+        clusterManager ! NodeDataChanged("%s/%d".format(membershipNode, 4))
+        waitFor(50.ms)
+
+        //make sure nothing is changed in terms of the nodes
+        connectedCount must eventually(be_==(1))
+        nodesReceived.size must be_==(3)
+        nodesReceived must containAll(nodes)
+        nodesReceived.foreach { node => node must be_==(nodes(node.id - 1)) }
+      }
+
+      "change permanent capability in zookeeper when node is part of the members" in {
+        val membership = new ArrayList[String]
+        membership.add("1")
+        membership.add("2")
+        membership.add("3")
+
+        val availability = membership.clone.asInstanceOf[ArrayList[String]]
+
+        val nodes = Array(Node(1, "localhost:31313", true, Set(1, 2)),
+          Node(2, "localhost:31314", true, Set(2, 3)), Node(3, "localhost:31315", true, Set(2, 3)))
+        val nodeUpdated = Node(3, "localhost:31314", true, Set(2, 3), Some(0L), Some(7L))
+
+        mockZooKeeper.getChildren(membershipNode, true) returns membership
+        mockZooKeeper.getData("%s/%d".format(membershipNode, 1), clusterManager.getWatcher, null) returns Node.nodeToByteArray(nodes(0))
+        mockZooKeeper.getData("%s/%d".format(membershipNode, 2), clusterManager.getWatcher, null) returns Node.nodeToByteArray(nodes(1))
+        mockZooKeeper.getData("%s/%d".format(membershipNode, 3), clusterManager.getWatcher, null) returns Node.nodeToByteArray(nodes(2)) thenReturns nodeUpdated
+        mockZooKeeper.getChildren(availabilityNode, true) returns availability
+
+        clusterManager ! Connected
+        connectedCount must eventually(be_==(1))
+        clusterManager ! NodeDataChanged("%s/%d".format(membershipNode, 3))
+        waitFor(50.ms)
+
+        //make sure that getData was called twice
+        got {
+          two(mockZooKeeper).getData("%s/%d".format(membershipNode, 3), clusterManager.getWatcher, null)
+          one(mockZooKeeper).getData("%s/%d".format(membershipNode, 2), clusterManager.getWatcher, null)
+          one(mockZooKeeper).getData("%s/%d".format(membershipNode, 1), clusterManager.getWatcher, null)
+        }
+        nodes(2) = nodeUpdated
+        nodesReceived.size must be_==(3)
+        nodesReceived must containAll(nodes)
+        nodesReceived.foreach { node => node must be_==(nodes(node.id - 1)) }
+      }
+
       "change capability data in Zookeeper when node is available" in{
         mockZooKeeper.exists(availabilityNode + "/1", false) returns mock[Stat]
         mockZooKeeper.setData(availabilityNode + "/1", Array[Byte](1), -1) returns mock[Stat]
@@ -736,7 +856,7 @@ class ZooKeeperClusterManagerComponentSpec extends Specification with Mockito wi
 
         mockZooKeeper.getChildren(membershipNode, true) returns membership
         nodes.foreach { node =>
-          mockZooKeeper.getData("%s/%d".format(membershipNode, node.id), false, null) returns Node.nodeToByteArray(node)
+          mockZooKeeper.getData("%s/%d".format(membershipNode, node.id), clusterManager.getWatcher, null) returns Node.nodeToByteArray(node)
                       }
         mockZooKeeper.getChildren(availabilityNode, true) returns availability
 
@@ -779,13 +899,13 @@ class ZooKeeperClusterManagerComponentSpec extends Specification with Mockito wi
 
         mockZooKeeper.getChildren(membershipNode, true) returns membership
         nodes.foreach { node  =>
-          mockZooKeeper.getData("%s/%d".format(membershipNode, node.id), false, null) returns Node.nodeToByteArray(node)
+          mockZooKeeper.getData("%s/%d".format(membershipNode, node.id), clusterManager.getWatcher, null) returns Node.nodeToByteArray(node)
                       }
         mockZooKeeper.getChildren(availabilityNode, true) returns availability
         mockZooKeeper.getData(availabilityNode + "/1", false, null) returns null
         mockZooKeeper.getData(availabilityNode + "/2", false, null) returns Array[Byte](3,2,4)
         mockZooKeeper.getData(availabilityNode + "/3", false, null) returns Array[Byte](0)
-        mockZooKeeper.getData(membershipNode + "/3", false, null) returns Node.nodeToByteArray(Node(3, "localhost:31315", false, Set(3,4)))
+        mockZooKeeper.getData(membershipNode + "/3", clusterManager.getWatcher, null) returns Node.nodeToByteArray(Node(3, "localhost:31315", false, Set(3,4)))
 
         clusterManager ! Connected
         nodesReceived.size must eventually(be_==(2))

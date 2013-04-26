@@ -24,7 +24,7 @@ import Actor._
 import java.io.IOException
 import org.apache.zookeeper._
 import protos.NorbertProtos
-import com.sun.xml.internal.ws.resources.SoapMessages
+import java.lang.NumberFormatException
 
 trait ZooKeeperClusterManagerComponent extends ClusterManagerComponent {
   this: ClusterNotificationManagerComponent =>
@@ -34,7 +34,9 @@ trait ZooKeeperClusterManagerComponent extends ClusterManagerComponent {
     case object Connected extends ZooKeeperMessage
     case object Disconnected extends ZooKeeperMessage
     case object Expired extends ZooKeeperMessage
+    //synchronization is not needed between this method
     case class NodeChildrenChanged(path: String) extends ZooKeeperMessage
+    case class NodeDataChanged(path: String) extends ZooKeeperMessage
   }
 
   class ZooKeeperClusterManager(connectString: String, sessionTimeout: Int, serviceName: String)
@@ -46,6 +48,7 @@ trait ZooKeeperClusterManagerComponent extends ClusterManagerComponent {
     private val currentNodes = scala.collection.mutable.Map[Int, Node]()
     private var zooKeeper: Option[ZooKeeper] = None
     private var watcher: ClusterWatcher = _
+    def getWatcher():ClusterWatcher = {watcher}
     private var connected = false
 
     def act() = {
@@ -82,6 +85,10 @@ trait ZooKeeperClusterManagerComponent extends ClusterManagerComponent {
           case SetNodeCapability(nodeId, capability) => handleSetNodeCapability(nodeId, capability)
 
           case Shutdown => handleShutdown
+
+          case NodeDataChanged(path) => if (path.startsWith(MEMBERSHIP_NODE)) {
+            handleCapabilityMemberChanged(path)
+          }
 
           case m => log.error("Received unknown message: %s".format(m))
         }
@@ -147,6 +154,15 @@ trait ZooKeeperClusterManagerComponent extends ClusterManagerComponent {
         }
 
         clusterNotificationManager ! ClusterNotificationMessages.NodesChanged(currentNodes)
+      }
+    }
+
+    private def handleCapabilityMemberChanged(path: String) {
+      log.debug("Handling a member capability changed event")
+
+      doIfConnectedWithZooKeeper("a membership changed event") { zk =>
+        if (lookupMemberNode(zk, path))
+          clusterNotificationManager ! ClusterNotificationMessages.NodesChanged(currentNodes)
       }
     }
 
@@ -309,6 +325,31 @@ trait ZooKeeperClusterManagerComponent extends ClusterManagerComponent {
       }
     }
 
+    /* This function does two things
+      if the node is still a member that we are tracking we will modify its state in our store and return true
+      else return false since we are not changing anything in our metadata
+     */
+    private def lookupMemberNode(zk: ZooKeeper, path: String):Boolean = {
+      //parse out the member id
+      var memberId = -1
+      try {
+        memberId = Integer.parseInt(path.substring(MEMBERSHIP_NODE.length+1).trim)
+      } catch {
+        case ex: NumberFormatException =>
+          log.error(ex, "Encountered an exception while parsing the path from getData event")
+          return false
+      }
+      val oldMember: Node = currentNodes.getOrElse(memberId, null)
+      //make sure this node did not get its membership changed
+      if(oldMember != null) {
+        val membersBytes = zk.getData("%s/%s".format(MEMBERSHIP_NODE, memberId),watcher,null)
+        currentNodes += memberId -> Node(memberId, membersBytes, oldMember.available, oldMember.capability)
+        return true
+      }
+      return false
+      //else leave the currentNodes unchanged
+    }
+
     private def lookupCurrentNodes(zk: ZooKeeper) {
       import scala.collection.JavaConversions._
 
@@ -329,7 +370,8 @@ trait ZooKeeperClusterManagerComponent extends ClusterManagerComponent {
                       case ex: KeeperException if ex.code == KeeperException.Code.NONODE => Some(0L)
                     }
                   } else None
-                  Node(id, zk.getData("%s/%s".format(MEMBERSHIP_NODE, member), false, null), available.contains(member), capabilityOption)
+
+                  Node(id, zk.getData("%s/%s".format(MEMBERSHIP_NODE, member), watcher, null), available.contains(member), capabilityOption)
                 }
         }
       }
@@ -412,6 +454,8 @@ trait ZooKeeperClusterManagerComponent extends ClusterManagerComponent {
           }
 
         case EventType.NodeChildrenChanged => zooKeeperManager ! NodeChildrenChanged(event.getPath)
+
+        case EventType.NodeDataChanged => zooKeeperManager ! NodeDataChanged(event.getPath)
       }
     }
 
