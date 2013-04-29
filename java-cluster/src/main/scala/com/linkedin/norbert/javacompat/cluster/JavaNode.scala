@@ -17,8 +17,6 @@ package com.linkedin.norbert.javacompat
 package cluster
 
 import reflect.BeanProperty
-import com.sun.xml.internal.ws.resources.SoapMessages
-import com.sun.xml.internal.bind.v2.model.core.NonElement
 
 object JavaNode {
   def apply(node: com.linkedin.norbert.cluster.Node): Node = {

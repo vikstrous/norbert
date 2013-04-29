@@ -21,7 +21,6 @@ package loadbalancer
 import org.specs.Specification
 import cluster.{InvalidClusterException, Node}
 import common.Endpoint
-import com.sun.xml.internal.ws.resources.SoapMessages
 
 class ConsistentHashPartitionedLoadBalancerFactorySpec extends Specification {
   case class EId(id: Int)

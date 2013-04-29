@@ -18,7 +18,6 @@ package cluster
 
 import com.google.protobuf.InvalidProtocolBufferException
 import protos.NorbertProtos
-import com.sun.xml.internal.bind.v2.model.core.NonElement
 
 /**
  * The <code>Node</code> companion object. Provides factory methods and implicits.

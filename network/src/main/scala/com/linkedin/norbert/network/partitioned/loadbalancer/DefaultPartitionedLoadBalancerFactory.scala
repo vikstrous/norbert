@@ -24,7 +24,6 @@ import common.Endpoint
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
 import scala.util.Random
 import scala.util.control.Breaks._
-import com.sun.xml.internal.bind.v2.model.core.NonElement
 
 /**
  * This class is intended for applications where there is a mapping from partitions -> servers able to respond to those requests. Requests are round-robined

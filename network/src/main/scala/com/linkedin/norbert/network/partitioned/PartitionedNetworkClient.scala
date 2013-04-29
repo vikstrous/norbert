@@ -25,8 +25,6 @@ import netty.NettyPartitionedNetworkClient
 import client.NetworkClientConfig
 import cluster.{Node, ClusterDisconnectedException, InvalidClusterException, ClusterClientComponent}
 import scala.util.Random
-import com.sun.xml.internal.bind.v2.model.core.NonElement
-import com.sun.xml.internal.ws.resources.SoapMessages
 
 object PartitionedNetworkClient {
   def apply[PartitionedId](config: NetworkClientConfig, loadBalancerFactory: PartitionedLoadBalancerFactory[PartitionedId]): PartitionedNetworkClient[PartitionedId] = {
