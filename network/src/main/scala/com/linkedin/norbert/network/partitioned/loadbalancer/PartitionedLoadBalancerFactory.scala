@@ -35,7 +35,7 @@ trait PartitionedLoadBalancer[PartitionedId] {
    *
    * @return the <code>Node</code> to route the next message to
    */
-  def nextNode(id: PartitionedId, capability: Option[Long] = None): Option[Node]
+  def nextNode(id: PartitionedId, capability: Option[Long] = None, persistentCapability: Option[Long] = None): Option[Node]
 
   /**
    * Returns a list of nodes representing one replica of the cluster, this is used by the PartitionedNetworkClient to handle
@@ -43,13 +43,13 @@ trait PartitionedLoadBalancer[PartitionedId] {
    *
    * @return the <code>Nodes</code> to broadcast the next message to a replica to
    */
-  def nodesForOneReplica(id: PartitionedId, capability: Option[Long] = None): Map[Node, Set[Int]]
+  def nodesForOneReplica(id: PartitionedId, capability: Option[Long] = None, persistentCapability: Option[Long] = None): Map[Node, Set[Int]]
 
   /**
    * Returns a list of nodes representing all replica for this particular partitionedId
    * @return the <code>Nodes</code> to multicast the message to
    */
-  def nodesForPartitionedId(id: PartitionedId, capability: Option[Long] = None): Set[Node]
+  def nodesForPartitionedId(id: PartitionedId, capability: Option[Long] = None, persistentCapability: Option[Long] = None): Set[Node]
 
   /**
    * Calculates a mapping of nodes to partitions for broadcasting a partitioned request. Optionally uses a partitioned
@@ -57,18 +57,19 @@ trait PartitionedLoadBalancer[PartitionedId] {
    *
    * @return the <code>Nodes</code> to broadcast the next message to a replica to
    */
-  def nodesForPartitions(id: PartitionedId, partitions: Set[Int], capability: Option[Long] = None): Map[Node, Set[Int]]
+  def nodesForPartitions(id: PartitionedId, partitions: Set[Int], capability: Option[Long] = None, persistentCapability: Option[Long] = None): Map[Node, Set[Int]]
 
   /**
    * Calculates a mapping of nodes to partitions to ensure ids belong to the same partition will be scatter to the same node
    * @param id
    * @param capability
+   * @param persistentCapability
    * @return
    */
-  def nodesForPartitionedIds(ids: Set[PartitionedId], capability: Option[Long] = None): Map[Node,  Set[PartitionedId]]  =
+  def nodesForPartitionedIds(ids: Set[PartitionedId], capability: Option[Long] = None, persistentCapability: Option[Long] = None): Map[Node,  Set[PartitionedId]]  =
   {
     ids.foldLeft(Map[Node, Set[PartitionedId]]().withDefaultValue(Set())) { (map, id) =>
-      val node = nextNode(id, capability).getOrElse(throw new NoNodesAvailableException("Unable to satisfy request, no node available for id %s".format(id)))
+      val node = nextNode(id, capability, persistentCapability).getOrElse(throw new NoNodesAvailableException("Unable to satisfy request, no node available for id %s".format(id)))
       map.updated(node, map(node) + id)
     }
   }

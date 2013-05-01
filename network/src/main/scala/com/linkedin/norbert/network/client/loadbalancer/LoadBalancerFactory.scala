@@ -39,7 +39,7 @@ trait LoadBalancer {
    * @return the <code>Some(node)</code> to route the next message to or <code>None</code> if there are no <code>Node</code>'s
    * available;
    */
-  def nextNode(capability : Option[Long] = None): Option[Node]
+  def nextNode(capability : Option[Long] = None, permanentCapability: Option[Long] = None): Option[Node]
 }
 
 

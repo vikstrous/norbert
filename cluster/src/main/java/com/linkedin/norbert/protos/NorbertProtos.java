@@ -187,12 +187,12 @@ public final class NorbertProtos {
       private int bitField0_;
       // required string key = 1;
       public static final int KEY_FIELD_NUMBER = 1;
-      private Object key_;
+      private java.lang.Object key_;
       public boolean hasKey() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
       public String getKey() {
-        Object ref = key_;
+        java.lang.Object ref = key_;
         if (ref instanceof String) {
           return (String) ref;
         } else {
@@ -206,7 +206,7 @@ public final class NorbertProtos {
         }
       }
       private com.google.protobuf.ByteString getKeyBytes() {
-        Object ref = key_;
+        java.lang.Object ref = key_;
         if (ref instanceof String) {
           com.google.protobuf.ByteString b = 
               com.google.protobuf.ByteString.copyFromUtf8((String) ref);
@@ -219,12 +219,12 @@ public final class NorbertProtos {
       
       // optional string value = 2;
       public static final int VALUE_FIELD_NUMBER = 2;
-      private Object value_;
+      private java.lang.Object value_;
       public boolean hasValue() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
       public String getValue() {
-        Object ref = value_;
+        java.lang.Object ref = value_;
         if (ref instanceof String) {
           return (String) ref;
         } else {
@@ -238,7 +238,7 @@ public final class NorbertProtos {
         }
       }
       private com.google.protobuf.ByteString getValueBytes() {
-        Object ref = value_;
+        java.lang.Object ref = value_;
         if (ref instanceof String) {
           com.google.protobuf.ByteString b = 
               com.google.protobuf.ByteString.copyFromUtf8((String) ref);
@@ -297,8 +297,10 @@ public final class NorbertProtos {
         return size;
       }
       
+      private static final long serialVersionUID = 0L;
       @java.lang.Override
-      protected Object writeReplace() throws java.io.ObjectStreamException {
+      protected java.lang.Object writeReplace()
+          throws java.io.ObjectStreamException {
         return super.writeReplace();
       }
       
@@ -538,12 +540,12 @@ public final class NorbertProtos {
         private int bitField0_;
         
         // required string key = 1;
-        private Object key_ = "";
+        private java.lang.Object key_ = "";
         public boolean hasKey() {
           return ((bitField0_ & 0x00000001) == 0x00000001);
         }
         public String getKey() {
-          Object ref = key_;
+          java.lang.Object ref = key_;
           if (!(ref instanceof String)) {
             String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
             key_ = s;
@@ -574,12 +576,12 @@ public final class NorbertProtos {
         }
         
         // optional string value = 2;
-        private Object value_ = "";
+        private java.lang.Object value_ = "";
         public boolean hasValue() {
           return ((bitField0_ & 0x00000002) == 0x00000002);
         }
         public String getValue() {
-          Object ref = value_;
+          java.lang.Object ref = value_;
           if (!(ref instanceof String)) {
             String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
             value_ = s;
@@ -653,12 +655,12 @@ public final class NorbertProtos {
     
     // required string message_name = 11;
     public static final int MESSAGE_NAME_FIELD_NUMBER = 11;
-    private Object messageName_;
+    private java.lang.Object messageName_;
     public boolean hasMessageName() {
       return ((bitField0_ & 0x00000008) == 0x00000008);
     }
     public String getMessageName() {
-      Object ref = messageName_;
+      java.lang.Object ref = messageName_;
       if (ref instanceof String) {
         return (String) ref;
       } else {
@@ -672,7 +674,7 @@ public final class NorbertProtos {
       }
     }
     private com.google.protobuf.ByteString getMessageNameBytes() {
-      Object ref = messageName_;
+      java.lang.Object ref = messageName_;
       if (ref instanceof String) {
         com.google.protobuf.ByteString b = 
             com.google.protobuf.ByteString.copyFromUtf8((String) ref);
@@ -695,12 +697,12 @@ public final class NorbertProtos {
     
     // optional string error_message = 13;
     public static final int ERROR_MESSAGE_FIELD_NUMBER = 13;
-    private Object errorMessage_;
+    private java.lang.Object errorMessage_;
     public boolean hasErrorMessage() {
       return ((bitField0_ & 0x00000020) == 0x00000020);
     }
     public String getErrorMessage() {
-      Object ref = errorMessage_;
+      java.lang.Object ref = errorMessage_;
       if (ref instanceof String) {
         return (String) ref;
       } else {
@@ -714,7 +716,7 @@ public final class NorbertProtos {
       }
     }
     private com.google.protobuf.ByteString getErrorMessageBytes() {
-      Object ref = errorMessage_;
+      java.lang.Object ref = errorMessage_;
       if (ref instanceof String) {
         com.google.protobuf.ByteString b = 
             com.google.protobuf.ByteString.copyFromUtf8((String) ref);
@@ -848,8 +850,10 @@ public final class NorbertProtos {
       return size;
     }
     
+    private static final long serialVersionUID = 0L;
     @java.lang.Override
-    protected Object writeReplace() throws java.io.ObjectStreamException {
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
     
@@ -1279,12 +1283,12 @@ public final class NorbertProtos {
       }
       
       // required string message_name = 11;
-      private Object messageName_ = "";
+      private java.lang.Object messageName_ = "";
       public boolean hasMessageName() {
         return ((bitField0_ & 0x00000008) == 0x00000008);
       }
       public String getMessageName() {
-        Object ref = messageName_;
+        java.lang.Object ref = messageName_;
         if (!(ref instanceof String)) {
           String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
           messageName_ = s;
@@ -1339,12 +1343,12 @@ public final class NorbertProtos {
       }
       
       // optional string error_message = 13;
-      private Object errorMessage_ = "";
+      private java.lang.Object errorMessage_ = "";
       public boolean hasErrorMessage() {
         return ((bitField0_ & 0x00000020) == 0x00000020);
       }
       public String getErrorMessage() {
-        Object ref = errorMessage_;
+        java.lang.Object ref = errorMessage_;
         if (!(ref instanceof String)) {
           String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
           errorMessage_ = s;
@@ -1586,6 +1590,10 @@ public final class NorbertProtos {
     java.util.List<java.lang.Integer> getPartitionList();
     int getPartitionCount();
     int getPartition(int index);
+    
+    // optional int64 persistentCapability = 4;
+    boolean hasPersistentCapability();
+    long getPersistentCapability();
   }
   public static final class Node extends
       com.google.protobuf.GeneratedMessage
@@ -1628,12 +1636,12 @@ public final class NorbertProtos {
     
     // required string url = 2;
     public static final int URL_FIELD_NUMBER = 2;
-    private Object url_;
+    private java.lang.Object url_;
     public boolean hasUrl() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
     public String getUrl() {
-      Object ref = url_;
+      java.lang.Object ref = url_;
       if (ref instanceof String) {
         return (String) ref;
       } else {
@@ -1647,7 +1655,7 @@ public final class NorbertProtos {
       }
     }
     private com.google.protobuf.ByteString getUrlBytes() {
-      Object ref = url_;
+      java.lang.Object ref = url_;
       if (ref instanceof String) {
         com.google.protobuf.ByteString b = 
             com.google.protobuf.ByteString.copyFromUtf8((String) ref);
@@ -1672,10 +1680,21 @@ public final class NorbertProtos {
       return partition_.get(index);
     }
     
+    // optional int64 persistentCapability = 4;
+    public static final int PERSISTENTCAPABILITY_FIELD_NUMBER = 4;
+    private long persistentCapability_;
+    public boolean hasPersistentCapability() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    public long getPersistentCapability() {
+      return persistentCapability_;
+    }
+    
     private void initFields() {
       id_ = 0;
       url_ = "";
       partition_ = java.util.Collections.emptyList();;
+      persistentCapability_ = 0L;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -1706,6 +1725,9 @@ public final class NorbertProtos {
       for (int i = 0; i < partition_.size(); i++) {
         output.writeInt32(3, partition_.get(i));
       }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeInt64(4, persistentCapability_);
+      }
       getUnknownFields().writeTo(output);
     }
     
@@ -1732,13 +1754,19 @@ public final class NorbertProtos {
         size += dataSize;
         size += 1 * getPartitionList().size();
       }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt64Size(4, persistentCapability_);
+      }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
       return size;
     }
     
+    private static final long serialVersionUID = 0L;
     @java.lang.Override
-    protected Object writeReplace() throws java.io.ObjectStreamException {
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
     
@@ -1860,6 +1888,8 @@ public final class NorbertProtos {
         bitField0_ = (bitField0_ & ~0x00000002);
         partition_ = java.util.Collections.emptyList();;
         bitField0_ = (bitField0_ & ~0x00000004);
+        persistentCapability_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000008);
         return this;
       }
       
@@ -1911,6 +1941,10 @@ public final class NorbertProtos {
           bitField0_ = (bitField0_ & ~0x00000004);
         }
         result.partition_ = partition_;
+        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        result.persistentCapability_ = persistentCapability_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -1942,6 +1976,9 @@ public final class NorbertProtos {
             partition_.addAll(other.partition_);
           }
           onChanged();
+        }
+        if (other.hasPersistentCapability()) {
+          setPersistentCapability(other.getPersistentCapability());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -2006,6 +2043,11 @@ public final class NorbertProtos {
               input.popLimit(limit);
               break;
             }
+            case 32: {
+              bitField0_ |= 0x00000008;
+              persistentCapability_ = input.readInt64();
+              break;
+            }
           }
         }
       }
@@ -2034,12 +2076,12 @@ public final class NorbertProtos {
       }
       
       // required string url = 2;
-      private Object url_ = "";
+      private java.lang.Object url_ = "";
       public boolean hasUrl() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
       public String getUrl() {
-        Object ref = url_;
+        java.lang.Object ref = url_;
         if (!(ref instanceof String)) {
           String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
           url_ = s;
@@ -2114,6 +2156,27 @@ public final class NorbertProtos {
         return this;
       }
       
+      // optional int64 persistentCapability = 4;
+      private long persistentCapability_ ;
+      public boolean hasPersistentCapability() {
+        return ((bitField0_ & 0x00000008) == 0x00000008);
+      }
+      public long getPersistentCapability() {
+        return persistentCapability_;
+      }
+      public Builder setPersistentCapability(long value) {
+        bitField0_ |= 0x00000008;
+        persistentCapability_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearPersistentCapability() {
+        bitField0_ = (bitField0_ & ~0x00000008);
+        persistentCapability_ = 0L;
+        onChanged();
+        return this;
+      }
+      
       // @@protoc_insertion_point(builder_scope:norbert.Node)
     }
     
@@ -2157,9 +2220,10 @@ public final class NorbertProtos {
       "\r \001(\t\022.\n\006header\030\016 \003(\0132\036.norbert.NorbertM" +
       "essage.Header\032$\n\006Header\022\013\n\003key\030\001 \002(\t\022\r\n\005" +
       "value\030\002 \001(\t\"*\n\006Status\022\006\n\002OK\020\000\022\t\n\005ERROR\020\001" +
-      "\022\r\n\tHEAVYLOAD\020\002\"2\n\004Node\022\n\n\002id\030\001 \002(\005\022\013\n\003u" +
-      "rl\030\002 \002(\t\022\021\n\tpartition\030\003 \003(\005B.\n\033com.linke",
-      "din.norbert.protosB\rNorbertProtosH\001"
+      "\022\r\n\tHEAVYLOAD\020\002\"P\n\004Node\022\n\n\002id\030\001 \002(\005\022\013\n\003u" +
+      "rl\030\002 \002(\t\022\021\n\tpartition\030\003 \003(\005\022\034\n\024persisten",
+      "tCapability\030\004 \001(\003B.\n\033com.linkedin.norber" +
+      "t.protosB\rNorbertProtosH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -2187,7 +2251,7 @@ public final class NorbertProtos {
           internal_static_norbert_Node_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_norbert_Node_descriptor,
-              new java.lang.String[] { "Id", "Url", "Partition", },
+              new java.lang.String[] { "Id", "Url", "Partition", "PersistentCapability", },
               com.linkedin.norbert.protos.NorbertProtos.Node.class,
               com.linkedin.norbert.protos.NorbertProtos.Node.Builder.class);
           return null;

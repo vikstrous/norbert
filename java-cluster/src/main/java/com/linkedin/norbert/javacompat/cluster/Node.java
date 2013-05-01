@@ -23,4 +23,5 @@ public interface Node {
   Set<Integer> getPartitionIds();
   boolean isAvailable();
   boolean isCapableOf(Long c);
+  boolean isCapableOf(Long c, Long pc);
 }

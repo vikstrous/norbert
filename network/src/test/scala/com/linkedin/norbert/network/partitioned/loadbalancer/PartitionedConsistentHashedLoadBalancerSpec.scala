@@ -55,11 +55,11 @@ class PartitionedConsistentHashedLoadBalancerSpec extends Specification {
 //  }
   
   val sampleNodes = Set(
-    Node(0, "localhost:31313", true, Set(0, 1), Some(0x1)),
+    Node(0, "localhost:31313", true, Set(0, 1), Some(0x1), Some(0)),
     Node(1, "localhost:31313", true, Set(1, 2)),
     Node(2, "localhost:31313", true, Set(2, 3)),
     Node(3, "localhost:31313", true, Set(3, 4)),
-    Node(4, "localhost:31313", true, Set(0, 4), Some(0x2)))
+    Node(4, "localhost:31313", true, Set(0, 4), Some(0x2), Some(0)))
   
 
   "ConsistentHashPartitionedLoadBalancer" should {
@@ -94,10 +94,10 @@ class PartitionedConsistentHashedLoadBalancerSpec extends Specification {
     "successfully calculate broadcast nodes" in {
       val nodes = sampleNodes
       val loadBalancer = loadBalancerFactory.newLoadBalancer(toEndpoints(nodes))
-      val replica1 = loadBalancer.nodesForOneReplica(0)
+      val replica1 = loadBalancer.nodesForOneReplica(0, Some(0), Some(0))
       replica1.values.flatten.toSet must be_==(Set(0, 1, 2, 3, 4))
 
-      val replica2 = loadBalancer.nodesForOneReplica(1)
+      val replica2 = loadBalancer.nodesForOneReplica(1, Some(0), Some(0))
       replica2.values.flatten.toSet must be_==(Set(0, 1, 2, 3, 4))
 
       replica1.keySet mustNotEq replica2.keySet
@@ -106,8 +106,8 @@ class PartitionedConsistentHashedLoadBalancerSpec extends Specification {
     "nodesForPartitionedId returns the correct node for 1210" in {
       val nodes = sampleNodes
       val lb = loadBalancerFactory.newLoadBalancer(toEndpoints(nodes))
-      lb.nodesForPartitionedId(1210) must haveTheSameElementsAs (Set(Node(0, "localhost:31313", true, Set(0, 1)), Node(4, "localhost:31313", true, Set(0, 4))))
-      lb.nodesForPartitionedId(1210, Some(0x1)) must haveTheSameElementsAs (Set(Node(0, "localhost:31313", true, Set(0, 1))))
+      lb.nodesForPartitionedId(1210, Some(0L), Some(0L)) must haveTheSameElementsAs (Set(Node(0, "localhost:31313", true, Set(0, 1)), Node(4, "localhost:31313", true, Set(0, 4))))
+      lb.nodesForPartitionedId(1210, Some(0x1), Some(0)) must haveTheSameElementsAs (Set(Node(0, "localhost:31313", true, Set(0, 1))))
     }
 
     "handle endpoints going down" in {
@@ -115,7 +115,7 @@ class PartitionedConsistentHashedLoadBalancerSpec extends Specification {
       val endpoints = toEndpoints(nodes)
 
       var loadBalancer = loadBalancerFactory.newLoadBalancer(endpoints)
-      val replica1 = loadBalancer.nodesForOneReplica(0)
+      val replica1 = loadBalancer.nodesForOneReplica(0, Some(0), Some(0))
       replica1.values.flatten.toSet must be_==(Set(0, 1, 2, 3, 4))
 
       // Mark node 0 down
@@ -123,7 +123,7 @@ class PartitionedConsistentHashedLoadBalancerSpec extends Specification {
 
       // Check we can still serve requests
       loadBalancer = loadBalancerFactory.newLoadBalancer(endpoints)
-      val replica2 = loadBalancer.nodesForOneReplica(0)
+      val replica2 = loadBalancer.nodesForOneReplica(0, Some(0), Some(0))
       replica2.values.flatten.toSet must be_==(Set(0, 1, 2, 3, 4))
 
       // Mark node 4 down
@@ -131,7 +131,7 @@ class PartitionedConsistentHashedLoadBalancerSpec extends Specification {
 
       // Check we can still serve requests
       loadBalancer = loadBalancerFactory.newLoadBalancer(endpoints)
-      val replica3 = loadBalancer.nodesForOneReplica(0)
+      val replica3 = loadBalancer.nodesForOneReplica(0, Some(0), Some(0))
       replica3.values.flatten.toSet must be_==(Set(0, 1, 2, 3, 4))
     }
 
@@ -146,7 +146,7 @@ class PartitionedConsistentHashedLoadBalancerSpec extends Specification {
 
       val lbf = new TestLBF(5, false)
       var loadBalancer = lbf.newLoadBalancer(endpoints)
-      loadBalancer.nodesForOneReplica(0) must throwA[InvalidClusterException]
+      loadBalancer.nodesForOneReplica(0, Some(0), Some(0)) must throwA[InvalidClusterException]
     }
   }
 

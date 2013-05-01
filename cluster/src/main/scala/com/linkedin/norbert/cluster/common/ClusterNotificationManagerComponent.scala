@@ -31,6 +31,8 @@ trait ClusterNotificationManagerComponent {
     case class Connected(nodes: Set[Node]) extends ClusterNotificationMessage
     case object Disconnected extends ClusterNotificationMessage
     case class NodesChanged(nodes: Set[Node]) extends ClusterNotificationMessage
+    //this message is useful in the case a node's capability is changed while the node is available
+    case class NodeCapabilityChanged(node: Node) extends ClusterNotificationMessage
     case class RemoveListener(key: ClusterListenerKey) extends ClusterNotificationMessage
     case object Shutdown extends ClusterNotificationMessage
 
@@ -55,11 +57,22 @@ trait ClusterNotificationManagerComponent {
           case Connected(nodes) => handleConnected(nodes)
           case Disconnected => handleDisconnected
           case NodesChanged(nodes) => handleNodesChanged(nodes)
+          case NodeCapabilityChanged(node) => handleNodeCapabilityChanged(node)
           case RemoveListener(key) => handleRemoveListener(key)
           case Shutdown => handleShutdown
           case GetCurrentNodes => reply(CurrentNodes(currentNodes))
           case m => log.error("Received unknown message: %s".format(m))
         }
+      }
+    }
+
+    private def handleNodeCapabilityChanged(node: Node) {
+      //no need to synchronize in scala actor
+      //just need to worry about out of order messages
+      //check if the node is still a member of the set of nodes
+      if (currentNodes.contains(node)) {
+        //update the state of the node
+        currentNodes = currentNodes + node
       }
     }
 

@@ -35,25 +35,25 @@ abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](numPartition
 
     val setCoverCounter = new AtomicInteger(0)
 
-    def nextNode(id: PartitionedId, capability: Option[Long] = None) = nodeForPartition(partitionForId(id), capability)
+    def nextNode(id: PartitionedId, capability: Option[Long] = None, persistentCapability: Option[Long] = None) = nodeForPartition(partitionForId(id), capability, persistentCapability)
 
 
-    def nodesForPartitionedId(id: PartitionedId, capability: Option[Long] = None) = {
-      partitionToNodeMap.getOrElse(partitionForId(id), (Vector.empty[Endpoint], new AtomicInteger(0), new Array[AtomicBoolean](0)))._1.filter(_.node.isCapableOf(capability)).toSet.map
+    def nodesForPartitionedId(id: PartitionedId, capability: Option[Long] = None, persistentCapability: Option[Long] = None) = {
+      partitionToNodeMap.getOrElse(partitionForId(id), (Vector.empty[Endpoint], new AtomicInteger(0), new Array[AtomicBoolean](0)))._1.filter(_.node.isCapableOf(capability, persistentCapability)).toSet.map
       { (endpoint: Endpoint) => endpoint.node }
     }
 
-    def nodesForOneReplica(id: PartitionedId, capability: Option[Long] = None) = {
-      nodesForPartitions(id, partitionToNodeMap, capability)
+    def nodesForOneReplica(id: PartitionedId, capability: Option[Long] = None, persistentCapability: Option[Long] = None) = {
+      nodesForPartitions(id, partitionToNodeMap, capability, persistentCapability)
     }
 
-    def nodesForPartitions(id: PartitionedId, partitions: Set[Int], capability: Option[Long] = None) = {
-      nodesForPartitions(id, partitionToNodeMap.filterKeys(partitions contains _), capability)
+    def nodesForPartitions(id: PartitionedId, partitions: Set[Int], capability: Option[Long] = None, persistentCapability: Option[Long] = None) = {
+      nodesForPartitions(id, partitionToNodeMap.filterKeys(partitions contains _), capability, persistentCapability)
     }
 
-    def nodesForPartitions(id: PartitionedId, partitionToNodeMap: Map[Int, (IndexedSeq[Endpoint], AtomicInteger, Array[AtomicBoolean])], capability: Option[Long]) = {
+    def nodesForPartitions(id: PartitionedId, partitionToNodeMap: Map[Int, (IndexedSeq[Endpoint], AtomicInteger, Array[AtomicBoolean])], capability: Option[Long], persistentCapability: Option[Long]) = {
       partitionToNodeMap.keys.foldLeft(Map.empty[Node, Set[Int]]) { (map, partition) =>
-        val nodeOption = nodeForPartition(partition, capability)
+        val nodeOption = nodeForPartition(partition, capability, persistentCapability)
         if(nodeOption.isDefined) {
           val n = nodeOption.get
           map + (n -> (map.getOrElse(n, Set.empty[Int]) + partition))
@@ -70,9 +70,10 @@ abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](numPartition
      *
      * @param partitionedIds
      * @param capability
+     * @param persistentCapability
      * @return
      */
-    override def nodesForPartitionedIds(partitionedIds: Set[PartitionedId], capability: Option[Long]) = {
+    override def nodesForPartitionedIds(partitionedIds: Set[PartitionedId], capability: Option[Long], persistentCapability: Option[Long] = None) = {
 
       // calculates partition Ids from the set of partitioned Ids
       val partitionsMap = partitionedIds.foldLeft(Map.empty[Int, Set[PartitionedId]])
@@ -113,7 +114,7 @@ abstract class DefaultPartitionedLoadBalancerFactory[PartitionedId](numPartition
                   val s = ep.node.partitionIds intersect partitionIds
 
                   // record the largest intersect
-                  if (s.size > intersect.size && ep.canServeRequests && ep.node.isCapableOf(capability))
+                  if (s.size > intersect.size && ep.canServeRequests && ep.node.isCapableOf(capability, persistentCapability))
                   {
                     intersect = s
                     endpoint = ep

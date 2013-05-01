@@ -99,17 +99,23 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
     return new ConsistentHashPartitionedLoadBalancer<PartitionedId>(hashFunction, routingMap, fallThrough);
   }
 
-  @Override
-  public Node nextNode(PartitionedId partitionedId)
-  {
-    return nextNode(partitionedId, 0L);
-  }
-  
   @Override 
   public Node nextNode(PartitionedId partitionedId, Long capability)
   {
+    return nextNode(partitionedId, capability, 0L);
+  }
+
+  @Override
+  public Node nextNode(PartitionedId partitionedId)
+  {
+    return nextNode(partitionedId, 0L, 0L);
+  }
+  
+  @Override 
+  public Node nextNode(PartitionedId partitionedId, Long capability, Long persistentCapability)
+  {
     if(_fallThrough != null)
-      return _fallThrough.nextNode(partitionedId, capability);
+      return _fallThrough.nextNode(partitionedId, capability, persistentCapability);
 
     // TODO: How do we choose which node to return if we don't want to throw Exception?
     throw new UnsupportedOperationException();
@@ -127,8 +133,14 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
   @Override
   public Set<Node> nodesForPartitionedId(PartitionedId partitionedId, Long capability)
   {
+    return nodesForPartitionedId(partitionedId, capability, 0L);
+  }
+
+  @Override
+  public Set<Node> nodesForPartitionedId(PartitionedId partitionedId, Long capability, Long persistentCapability)
+  {
     if (_fallThrough != null)
-      return _fallThrough.nodesForPartitionedId(partitionedId, capability);
+      return _fallThrough.nodesForPartitionedId(partitionedId, capability, persistentCapability);
 
     throw new UnsupportedOperationException();
   }
@@ -136,11 +148,17 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
   @Override
   public Map<Node, Set<Integer>> nodesForOneReplica(PartitionedId partitionedId)
   {
-    return nodesForOneReplica(partitionedId, 0L);
+    return nodesForOneReplica(partitionedId, 0L, 0L);
   }
 
   @Override
   public Map<Node, Set<Integer>> nodesForOneReplica(PartitionedId partitionedId, Long capability)
+  {
+    return nodesForOneReplica(partitionedId, capability, 0L);
+  }
+
+  @Override
+  public Map<Node, Set<Integer>> nodesForOneReplica(PartitionedId partitionedId, Long capability, Long persistentCapability)
   {
     Map<Endpoint, Set<Integer>> replica = lookup(_routingMap, _hashFunction.hash(partitionedId.toString()));
     Map<Node, Set<Integer>> results = new HashMap<Node, Set<Integer>>();
@@ -154,7 +172,7 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
       Node node = entry.getKey().getNode();
       Set<Integer> partitionsToServe = entry.getValue();
 
-      if(entry.getKey().canServeRequests() && node.isCapableOf(capability))
+      if(entry.getKey().canServeRequests() && node.isCapableOf(capability, persistentCapability))
       {
         results.put(node, new HashSet<Integer>(partitionsToServe));
       }
@@ -167,7 +185,7 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
 
     if(unsatisfiedPartitions.size() > 0)
     {
-      Map<Node, Set<Integer>> resolved = _fallThrough.nodesForPartitions(partitionedId, unsatisfiedPartitions, capability);
+      Map<Node, Set<Integer>> resolved = _fallThrough.nodesForPartitions(partitionedId, unsatisfiedPartitions, capability, persistentCapability);
       for(Map.Entry<Node, Set<Integer>> entry : resolved.entrySet())
       {
         Set<Integer> partitions = results.get(entry.getKey());
@@ -187,13 +205,18 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
 
   @Override
   public Map<Node, Set<Integer>> nodesForPartitions(PartitionedId partitionedId, Set<Integer> partitions) {
-    return nodesForPartitions(partitionedId, partitions, 0L);
+    return nodesForPartitions(partitionedId, partitions, 0L, 0L);
+  }
+ 
+  @Override
+  public Map<Node, Set<Integer>> nodesForPartitions(PartitionedId partitionedId, Set<Integer> partitions, Long capability)
+  {
+    return nodesForPartitions(partitionedId, partitions, capability, 0L);
   }
 
-
   @Override
-  public Map<Node, Set<Integer>> nodesForPartitions(PartitionedId partitionedId, Set<Integer> partitions, Long capability) {
-    Map<Node, Set<Integer>> entireReplica = nodesForOneReplica(partitionedId, capability);
+  public Map<Node, Set<Integer>> nodesForPartitions(PartitionedId partitionedId, Set<Integer> partitions, Long capability, Long persistentCapability) {
+    Map<Node, Set<Integer>> entireReplica = nodesForOneReplica(partitionedId, capability, persistentCapability);
 
     Map<Node, Set<Integer>> result = new HashMap<Node, Set<Integer>>();
     for(Map.Entry<Node, Set<Integer>> entry : entireReplica.entrySet())

@@ -50,7 +50,7 @@ class ConsistentHashPartitionedLoadBalancerFactorySpec extends Specification {
         Node(4, "localhost:31313", true, Set(0, 4)))
 
       val lb = loadBalancerFactory.newLoadBalancer(toEndpoints(nodes))
-      lb.nextNode(EId(1210)) must beSome[Node].which(List(Node(0, "localhost:31313", true, Set(0, 1)),
+      lb.nextNode(EId(1210), Some(0L), Some(0L)) must beSome[Node].which(List(Node(0, "localhost:31313", true, Set(0, 1)),
         Node(4, "localhost:31313", true, Set(0, 4))) must contain(_))
     }
 
@@ -60,16 +60,16 @@ class ConsistentHashPartitionedLoadBalancerFactorySpec extends Specification {
         Node(1, "localhost:31313", true, Set(1, 2)),
         Node(2, "localhost:31313", true, Set(2, 3)),
         Node(3, "localhost:31313", true, Set(3, 4)),
-        Node(4, "localhost:31313", true, Set(0, 4), Some(0x2)),
-        Node(5, "localhost:31313", true, Set(3, 0), Some(0x3)))
+        Node(4, "localhost:31313", true, Set(0, 4), Some(0x2), Some(2)),
+        Node(5, "localhost:31313", true, Set(3, 0), Some(0x3), Some(2)))
 
       val lb = loadBalancerFactory.newLoadBalancer(toEndpoints(nodes))
-      lb.nextNode(EId(1210)) must beSome[Node].which(List(Node(0, "localhost:31313", true, Set(0, 1)),
-                                                          Node(4, "localhost:31313", true, Set(0, 4), Some(0x2)),
-                                                          Node(5, "localhost:31313", true, Set(3, 0), Some(0x3))) must contain(_))
-      lb.nextNode(EId(1210), Some(0x1)) must be_==(Some(Node(5, "localhost:31313", true, Set(3,0), Some(0x3))))
-      lb.nextNode(EId(1210), Some(0x2)) must beSome[Node].which(List(Node(4, "localhost:31313", true, Set(0, 4), Some(0x2)),
-                                                                     Node(5, "localhost:31313", true, Set(3, 0), Some(0x3))) must contain(_))
+      lb.nextNode(EId(1210), Some(0L)) must beSome[Node].which(List(Node(0, "localhost:31313", true, Set(0, 1)),
+                                                          Node(4, "localhost:31313", true, Set(0, 4), Some(0x2), Some(2)),
+                                                          Node(5, "localhost:31313", true, Set(3, 0), Some(0x3), Some(2))) must contain(_))
+      lb.nextNode(EId(1210), Some(0x1)) must be_==(Some(Node(5, "localhost:31313", true, Set(3,0), Some(0x3), Some(2))))
+      lb.nextNode(EId(1210), Some(0x2)) must beSome[Node].which(List(Node(4, "localhost:31313", true, Set(0, 4), Some(0x2), Some(2)),
+                                                                     Node(5, "localhost:31313", true, Set(3, 0), Some(0x3), Some(2))) must contain(_))
       //HIGH TODO: overflow @DefaultLoadBalancerHelper.nodeForPartition
       //lb.nextNode(EId(1210), Some(0x4)) must be_==(None)
     }
@@ -101,7 +101,7 @@ class ConsistentHashPartitionedLoadBalancerFactorySpec extends Specification {
         Node(4, "localhost:51234", true, Set(4,0,1))
       )
       val lb = loadBalancerFactory.newLoadBalancer(toEndpoints(nodes))
-      lb.nodesForPartitionedId(EId(1210)) must haveTheSameElementsAs (Set(Node(0, "localhost:12345", true, Set(0,1,2)),
+      lb.nodesForPartitionedId(EId(1210), Some(0L), Some(0L)) must haveTheSameElementsAs (Set(Node(0, "localhost:12345", true, Set(0,1,2)),
                                                          Node(3, "localhost:45123", true, Set(3,4,0)),
                                                          Node(4, "localhost:51234", true, Set(4,0,1))))
      }
@@ -115,40 +115,40 @@ class ConsistentHashPartitionedLoadBalancerFactorySpec extends Specification {
         Node(4, "localhost:51234", true, Set(4,0,1))
       )
       val lb = loadBalancerFactory.newLoadBalancer(toEndpoints(nodes, Set(nodes.last)))
-      lb.nodesForPartitionedId(EId(1210)) must haveTheSameElementsAs (Set(Node(0, "localhost:12345", true, Set(0,1,2)),
+      lb.nodesForPartitionedId(EId(1210), Some(0L), Some(0L)) must haveTheSameElementsAs (Set(Node(0, "localhost:12345", true, Set(0,1,2)),
                                                                           Node(3, "localhost:45123", true, Set(3,4,0)),
                                                                           Node(4, "localhost:51234", true, Set(4,0,1))))
      }
 
     "nodesForPartitionedId returns only nodes satisfying capabiity requirements" in {
       val nodes = Set (
-        Node(0, "localhost:12345", true, Set(0,1,2), Some(0x1)),
+        Node(0, "localhost:12345", true, Set(0,1,2), Some(0x1), Some(0)),
         Node(1, "localhost:23451", true, Set(1,2,3)),
         Node(2, "localhost:34512", true, Set(2,3,4)),
         Node(3, "localhost:45123", true, Set(3,4,0)),
-        Node(4, "localhost:51234", true, Set(4,0,1), Some(0x2))
+        Node(4, "localhost:51234", true, Set(4,0,1), Some(0x2), Some(0))
       )
       val lb = loadBalancerFactory.newLoadBalancer(toEndpoints(nodes))
-      lb.nodesForPartitionedId(EId(1210)) must haveTheSameElementsAs (Set(Node(0, "localhost:12345", true, Set(0,1,2)),
+      lb.nodesForPartitionedId(EId(1210), Some(0L), Some(0L)) must haveTheSameElementsAs (Set(Node(0, "localhost:12345", true, Set(0,1,2)),
                                                                           Node(3, "localhost:45123", true, Set(3,4,0)),
                                                                           Node(4, "localhost:51234", true, Set(4,0,1))))
 
-      lb.nodesForPartitionedId(EId(1210), Some(0x1)) must haveTheSameElementsAs (Set(Node(0, "localhost:12345", true, Set(0,1,2), Some(0x1))))
-      lb.nodesForPartitionedId(EId(1210), Some(0x2)) must haveTheSameElementsAs (Set(Node(4, "localhost:51234", true, Set(4,0,1), Some(0x2))))
-      lb.nodesForPartitionedId(EId(1210), Some(0x3)) must haveTheSameElementsAs (Set())
+      lb.nodesForPartitionedId(EId(1210), Some(0x1), Some(0L)) must haveTheSameElementsAs (Set(Node(0, "localhost:12345", true, Set(0,1,2), Some(0x1), Some(0))))
+      lb.nodesForPartitionedId(EId(1210), Some(0x2), Some(0L)) must haveTheSameElementsAs (Set(Node(4, "localhost:51234", true, Set(4,0,1), Some(0x2), Some(0))))
+      lb.nodesForPartitionedId(EId(1210), Some(0x3), Some(0L)) must haveTheSameElementsAs (Set())
     }
     
     "nodesForOneReplica returns only nodes satisfying capability requirements" in {
       val nodes = Set (
-        Node(0, "localhost:12345", true, Set(0,1,2), Some(0x1)),
+        Node(0, "localhost:12345", true, Set(0,1,2), Some(0x1), Some(2)),
         Node(1, "localhost:23451", true, Set(1,2,3)),
-        Node(2, "localhost:34512", true, Set(2,3,4), Some(0x2)),
-        Node(3, "localhost:45123", true, Set(3,4,0), Some(0x3)),
-        Node(4, "localhost:51234", true, Set(4,0,1), Some(0x6))
+        Node(2, "localhost:34512", true, Set(2,3,4), Some(0x2), Some(2)),
+        Node(3, "localhost:45123", true, Set(3,4,0), Some(0x3), Some(2)),
+        Node(4, "localhost:51234", true, Set(4,0,1), Some(0x6), Some(2))
       )
       val lb = loadBalancerFactory.newLoadBalancer(toEndpoints(nodes))
-      lb.nodesForOneReplica(EId(1210)).flatten(_._2) must haveTheSameElementsAs (Set(0,1,2,3,4))
-      lb.nodesForOneReplica(EId(1210), Some(0x2)).flatten(_._2) must haveTheSameElementsAs (Set(0,1,2,3,4))
+      lb.nodesForOneReplica(EId(1210), Some(0), Some(0)).flatten(_._2) must haveTheSameElementsAs (Set(0,1,2,3,4))
+      lb.nodesForOneReplica(EId(1210), Some(0x2), Some(2)).flatten(_._2) must haveTheSameElementsAs (Set(0,1,2,3,4))
     }
 
     "DefaultPartitionedLoadBalancer can properly balance the load without capability" in {
@@ -175,18 +175,18 @@ class ConsistentHashPartitionedLoadBalancerFactorySpec extends Specification {
 
     "DefaultPartitionedLoadBalancer can properly load balance among nodes satisfying capability" in {
       val nodes = Set (
-        Node(0, "localhost:12345", true, Set(0,1,2), Some(0x1L)),
+        Node(0, "localhost:12345", true, Set(0,1,2), Some(0x1L), Some(2L)),
         Node(1, "localhost:23451", true, Set(1,2,3)),
         Node(2, "localhost:34512", true, Set(2,3,4)),
-        Node(3, "localhost:45123", true, Set(3,4,0), Some(0x1L)),
-        Node(4, "localhost:51234", true, Set(4,0,1), Some(0x2L)),
-        Node(5, "localhost:13245", true, Set(0,1,3), Some(0x2L))
+        Node(3, "localhost:45123", true, Set(3,4,0), Some(0x1L), Some(2L)),
+        Node(4, "localhost:51234", true, Set(4,0,1), Some(0x2L), Some(2L)),
+        Node(5, "localhost:13245", true, Set(0,1,3), Some(0x2L), Some(2L))
       )
       val lb = loadBalancerFactory.newLoadBalancer(toEndpoints(nodes))
       val accessVector = Array(0,0,0,0,0,0)
       (0 to 11).foreach { (i) =>
-        val node1 : Node = lb.nextNode(EId(1210), Some(0x1L)).get
-        val node2 : Node = lb.nextNode(EId(1210), Some(0x2L)).get
+        val node1 : Node = lb.nextNode(EId(1210), Some(0x1L), Some(2L)).get
+        val node2 : Node = lb.nextNode(EId(1210), Some(0x2L), Some(2L)).get
         if (!node1.eq(None))
           accessVector(node1.id) = accessVector(node1.id) + 1
         if (!node2.eq(None))

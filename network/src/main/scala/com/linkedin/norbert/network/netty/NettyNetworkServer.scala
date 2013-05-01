@@ -113,8 +113,10 @@ class NettyNetworkServer(serverConfig: NetworkServerConfig) extends NetworkServe
 
   override def shutdown = {
     if (serverConfig.clusterClient == null) clusterClient.shutdown else super.shutdown
+    //change the sequence so that we do not accept any more connections from clients
+    //are existing connections could feed us new norbert messages
+    serverChannelHandler.shutdown
     messageExecutor.shutdown
 //    requestContextEncoder.shutdown
-    serverChannelHandler.shutdown
   }
 }

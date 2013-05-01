@@ -41,7 +41,10 @@ object Node {
       val node = NorbertProtos.Node.newBuilder.mergeFrom(bytes).build
       val partitions = node.getPartitionList.asInstanceOf[java.util.List[Int]].foldLeft(Set[Int]()) { (set, i) => set + i }
 
-      Node(node.getId, node.getUrl, available, partitions, capability)
+      if(!node.hasPersistentCapability)
+        Node(node.getId, node.getUrl, available, partitions, capability, None)
+      else
+        Node(node.getId, node.getUrl, available, partitions, capability, Some(node.getPersistentCapability))
     } catch {
       case ex: InvalidProtocolBufferException => throw new InvalidNodeException("Error deserializing node", ex)
     }
@@ -56,7 +59,10 @@ object Node {
    */
   implicit def nodeToByteArray(node: Node): Array[Byte] = {
     val builder = NorbertProtos.Node.newBuilder
-    builder.setId(node.id).setUrl(node.url)
+    node.persistentCapability match {
+      case None => builder.setId(node.id).setUrl(node.url)
+      case Some(x) => builder.setId(node.id).setUrl(node.url).setPersistentCapability(x)
+    }
     node.partitionIds.foreach(builder.addPartition(_))
 
     builder.build.toByteArray
@@ -72,7 +78,7 @@ object Node {
  * @param partitions the partitions for which the node can handle requests
  * @param capability the 64 bits Long representing up to 64 node capabilities
  */
-final case class Node(id: Int, url: String, available: Boolean, partitionIds: Set[Int] = Set.empty, capability: Option[Long] = None) {
+final case class Node(id: Int, url: String, available: Boolean, partitionIds: Set[Int] = Set.empty, capability: Option[Long] = None, persistentCapability: Option[Long] = None) {
   if (url == null) throw new NullPointerException("url must not be null")
   if (partitionIds == null) throw new NullPointerException("partitions must not be null")
 
@@ -83,13 +89,19 @@ final case class Node(id: Int, url: String, available: Boolean, partitionIds: Se
     case _ => false
   }
 
-  override def toString = "Node(%d,%s,[%s],%b,0x%08X)".format(id, url, partitionIds.mkString(","), available, if (capability.isEmpty) 0L else capability.get)
+  override def toString = "Node(%d,%s,[%s],%b,0x%08X,0x%08X)".format(id, url, partitionIds.mkString(","), available, if (capability.isEmpty) 0L else capability.get, if (persistentCapability.isEmpty) 0L else persistentCapability.get)
 
-  def isCapableOf(c: Option[Long]) : Boolean = {
-    (capability, c) match {
+  def isCapableOf(c: Option[Long], pc: Option[Long]) : Boolean = {
+    val capabilityMatch: Boolean = (capability, c) match {
       case (Some(nc), Some(rc)) => (nc & rc) == rc
       case (None, Some(rc)) => rc == 0L
       case _ => true
     }
+    val persistentCapabilityMatch: Boolean = (persistentCapability, pc) match {
+      case (Some(nc), Some(rc)) => (nc & rc) == rc
+      case (None, Some(rc)) => rc == 0L
+      case _ => true
+    }
+    return (persistentCapabilityMatch & capabilityMatch)
   }
 }
