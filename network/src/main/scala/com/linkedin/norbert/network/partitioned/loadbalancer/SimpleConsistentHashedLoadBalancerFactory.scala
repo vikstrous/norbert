@@ -52,13 +52,13 @@ class SimpleConsistentHashedLoadBalancerFactory[PartitionedId](numReplicas: Int,
 
 class SimpleConsistentHashedLoadBalancer[PartitionedId](wheel: TreeMap[Int, Endpoint], hashFn: PartitionedId => Int) extends PartitionedLoadBalancer[PartitionedId] {
 
-  def nodesForOneReplica(id: PartitionedId, capability: Option[Long] = None, permanentCapability: Option[Long] = None) = throw new UnsupportedOperationException
+  def nodesForOneReplica(id: PartitionedId, capability: Option[Long] = None, persistentCapability: Option[Long] = None) = throw new UnsupportedOperationException
 
-  def nodesForPartitionedId(id: PartitionedId, capability: Option[Long] = None, permanentCapability: Option[Long] = None) = throw new UnsupportedOperationException
+  def nodesForPartitionedId(id: PartitionedId, capability: Option[Long] = None, persistentCapability: Option[Long] = None) = throw new UnsupportedOperationException
 
-  def nodesForPartitions(id: PartitionedId, partitions: Set[Int], capability: Option[Long] = None, permanentCapability: Option[Long] = None) = throw new UnsupportedOperationException
+  def nodesForPartitions(id: PartitionedId, partitions: Set[Int], capability: Option[Long] = None, persistentCapability: Option[Long] = None) = throw new UnsupportedOperationException
 
-  def nextNode(id: PartitionedId, capability: Option[Long], permanentCapability: Option[Long]): Option[Node] = {
-    PartitionUtil.searchWheel(wheel, hashFn(id), (e: Endpoint) => e.canServeRequests && e.node.isCapableOf(capability, permanentCapability)).map(_.node)
+  def nextNode(id: PartitionedId, capability: Option[Long], persistentCapability: Option[Long]): Option[Node] = {
+    PartitionUtil.searchWheel(wheel, hashFn(id), (e: Endpoint) => e.canServeRequests && e.node.isCapableOf(capability, persistentCapability)).map(_.node)
   }
 }

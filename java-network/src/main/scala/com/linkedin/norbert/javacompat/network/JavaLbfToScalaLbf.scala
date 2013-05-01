@@ -14,7 +14,7 @@ class JavaLbfToScalaLbf[PartitionedId](javaLbf: PartitionedLoadBalancerFactory[P
   def newLoadBalancer(nodes: Set[SEndpoint]) = {
     val lb = javaLbf.newLoadBalancer(nodes)
     new SPartitionedLoadBalancer[PartitionedId] {
-      def nextNode(id: PartitionedId, capability: Option[Long] = None, persistentCapability: Option[Long]) = {
+      def nextNode(id: PartitionedId, capability: Option[Long] = None, persistentCapability: Option[Long] = None) = {
         (capability, persistentCapability) match {
           case (Some(c),Some(pc)) => Option(lb.nextNode(id, c.longValue, pc.longValue))
           case (None, Some(pc)) => Option(lb.nextNode(id, 0L, pc.longValue))
@@ -23,7 +23,7 @@ class JavaLbfToScalaLbf[PartitionedId](javaLbf: PartitionedLoadBalancerFactory[P
         }
       }
 
-      def nodesForOneReplica(id: PartitionedId, capability: Option[Long]  = None, persistentCapability: Option[Long]) = {
+      def nodesForOneReplica(id: PartitionedId, capability: Option[Long]  = None, persistentCapability: Option[Long] = None) = {
         val jMap = (capability, persistentCapability) match {
           case (Some(c),Some(pc)) => lb.nodesForOneReplica(id, c.longValue, pc.longValue)
           case (Some(c), None) => lb.nodesForOneReplica(id, c.longValue, 0L)
@@ -43,7 +43,7 @@ class JavaLbfToScalaLbf[PartitionedId](javaLbf: PartitionedLoadBalancerFactory[P
         sMap
       }
 
-      def nodesForPartitionedId(id: PartitionedId, capability: Option[Long] = None, persistentCapability: Option[Long]) = {
+      def nodesForPartitionedId(id: PartitionedId, capability: Option[Long] = None, persistentCapability: Option[Long] = None) = {
         val jSet = (capability, persistentCapability) match {
           case (Some(c), Some(pc)) => lb.nodesForPartitionedId(id, c.longValue, pc.longValue)
           case (Some(c), None) => lb.nodesForPartitionedId(id, c.longValue, 0L)
@@ -59,7 +59,7 @@ class JavaLbfToScalaLbf[PartitionedId](javaLbf: PartitionedLoadBalancerFactory[P
         sSet
       }
 
-      def nodesForPartitions(id: PartitionedId, partitions: Set[Int], capability: Option[Long] = None, persistentCapability: Option[Long]) = {
+      def nodesForPartitions(id: PartitionedId, partitions: Set[Int], capability: Option[Long] = None, persistentCapability: Option[Long] = None) = {
         val jMap =  (capability, persistentCapability) match {
           case (Some(c), Some(pc)) => lb.nodesForOneReplica(id, c.longValue, pc.longValue)
           case (Some(c), None) => lb.nodesForOneReplica(id, c.longValue, 0L)

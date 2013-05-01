@@ -40,6 +40,11 @@ public class RoundRobinLoadBalancerFactory implements LoadBalancerFactory {
         }
 
         @Override
+	public Node nextNode(Long capability) {
+	  return nextNode(capability,0L);	
+	}
+
+        @Override
         public Node nextNode(Long capability, Long persistentCapability){
           Option<com.linkedin.norbert.cluster.Node> node = loadBalancer.nextNode(new Some<Long>(capability.longValue()), new Some<Long>(persistentCapability.longValue()));
           if(node.isDefined())

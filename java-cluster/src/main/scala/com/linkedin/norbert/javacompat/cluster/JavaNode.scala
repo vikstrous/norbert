@@ -32,8 +32,9 @@ object JavaNode {
   }
 }
 
-case class JavaNode(@BeanProperty id: Int, @BeanProperty url: String, @BeanProperty available: Boolean, @BeanProperty partitionIds: java.util.Set[java.lang.Integer], capability: Option[Long], persistentCapability: Option[Long]) extends Node {
+case class JavaNode(@BeanProperty id: Int, @BeanProperty url: String, @BeanProperty available: Boolean, @BeanProperty partitionIds: java.util.Set[java.lang.Integer], capability: Option[Long], persistentCapability: Option[Long] = None) extends Node {
   def isAvailable = available
+  def isCapableOf(c: java.lang.Long) : Boolean = isCapableOf(c, 0L)
   def isCapableOf(c: java.lang.Long, pc: java.lang.Long) : Boolean =
     (capability, persistentCapability) match {
       case (Some(nc), Some(npc)) => ((nc & c.longValue) == c.longValue) && ((npc & pc.longValue) == pc.longValue)

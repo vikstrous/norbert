@@ -38,11 +38,22 @@ public interface PartitionedLoadBalancer<PartitionedId> {
    */
   Node nextNode(PartitionedId id);
 
+   /**
+   * Returns the next <code>Node</code> a message should be routed to based on the PartitionId provided.
+   *
+   * @param id the id to be used to calculate partitioning information.
+   * @param capability the minimal capability required by client
+   *
+   * @return the <code>Node</code> to route the next message to
+   */
+  Node nextNode(PartitionedId id, Long capability);
+
   /**
    * Returns the next <code>Node</code> a message should be routed to based on the PartitionId provided.
    *
    * @param id the id to be used to calculate partitioning information.
    * @param capability the minimal capability required by client
+   * @param persistentCapability the capability of more persistent nature
    *
    * @return the <code>Node</code> to route the next message to
    */
@@ -53,6 +64,12 @@ public interface PartitionedLoadBalancer<PartitionedId> {
    * @return the <code>Nodes</code> to multicast the next messages to each replica
    */
   Set<Node> nodesForPartitionedId(PartitionedId id);
+
+  /**
+   * Returns all replica nodes for the same partitionedId
+   * @return the <code>Nodes</code> to multicast the next messages to each replica
+   */
+  Set<Node> nodesForPartitionedId(PartitionedId id, Long capability);
 
   /**
    * Returns all replica nodes for the same partitionedId
@@ -74,6 +91,14 @@ public interface PartitionedLoadBalancer<PartitionedId> {
    *
    * @return the set of <code>Nodes</code> to broadcast the next message to a replica to
    */
+  Map<Node, Set<Integer>> nodesForOneReplica(PartitionedId id, Long capability);
+
+  /**
+   * Returns a set of nodes represents one replica of the cluster, this is used by the PartitionedNetworkClient to handle
+   * broadcast to one replica
+   *
+   * @return the set of <code>Nodes</code> to broadcast the next message to a replica to
+   */
   Map<Node, Set<Integer>> nodesForOneReplica(PartitionedId id, Long capability, Long persistentCapability);
 
   /**
@@ -83,6 +108,14 @@ public interface PartitionedLoadBalancer<PartitionedId> {
    * @return the <code>Nodes</code> to broadcast the next message to a replica to
    */
   Map<Node, Set<Integer>> nodesForPartitions(PartitionedId id, Set<Integer> partitions);
+
+  /**
+   * Calculates a mapping of nodes to partitions for broadcasting a partitioned request. Optionally uses a partitioned
+   * id for consistent hashing purposes
+   *
+   * @return the <code>Nodes</code> to broadcast the next message to a replica to
+   */
+  Map<Node, Set<Integer>> nodesForPartitions(PartitionedId id, Set<Integer> partitions, Long capability);
 
   /**
    * Calculates a mapping of nodes to partitions for broadcasting a partitioned request. Optionally uses a partitioned

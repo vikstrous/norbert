@@ -99,6 +99,12 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
     return new ConsistentHashPartitionedLoadBalancer<PartitionedId>(hashFunction, routingMap, fallThrough);
   }
 
+  @Override 
+  public Node nextNode(PartitionedId partitionedId, Long capability)
+  {
+    return nextNode(partitionedId, capability, 0L);
+  }
+
   @Override
   public Node nextNode(PartitionedId partitionedId)
   {
@@ -125,6 +131,12 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
   }
 
   @Override
+  public Set<Node> nodesForPartitionedId(PartitionedId partitionedId, Long capability)
+  {
+    return nodesForPartitionedId(partitionedId, capability, 0L);
+  }
+
+  @Override
   public Set<Node> nodesForPartitionedId(PartitionedId partitionedId, Long capability, Long persistentCapability)
   {
     if (_fallThrough != null)
@@ -137,6 +149,12 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
   public Map<Node, Set<Integer>> nodesForOneReplica(PartitionedId partitionedId)
   {
     return nodesForOneReplica(partitionedId, 0L, 0L);
+  }
+
+  @Override
+  public Map<Node, Set<Integer>> nodesForOneReplica(PartitionedId partitionedId, Long capability)
+  {
+    return nodesForOneReplica(partitionedId, capability, 0L);
   }
 
   @Override
@@ -189,7 +207,12 @@ public class ConsistentHashPartitionedLoadBalancer<PartitionedId> implements Par
   public Map<Node, Set<Integer>> nodesForPartitions(PartitionedId partitionedId, Set<Integer> partitions) {
     return nodesForPartitions(partitionedId, partitions, 0L, 0L);
   }
-
+ 
+  @Override
+  public Map<Node, Set<Integer>> nodesForPartitions(PartitionedId partitionedId, Set<Integer> partitions, Long capability)
+  {
+    return nodesForPartitions(partitionedId, partitions, capability, 0L);
+  }
 
   @Override
   public Map<Node, Set<Integer>> nodesForPartitions(PartitionedId partitionedId, Set<Integer> partitions, Long capability, Long persistentCapability) {

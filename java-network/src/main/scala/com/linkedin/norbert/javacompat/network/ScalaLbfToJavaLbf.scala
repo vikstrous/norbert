@@ -16,6 +16,10 @@ class ScalaLbfToJavaLbf[PartitionedId](scalaLbf: SPartitionedLoadBalancerFactory
     new PartitionedLoadBalancer[PartitionedId] {
       def nodesForOneReplica(id: PartitionedId) = nodesForOneReplica(id, 0L, 0L)
 
+      def nodesForOneReplica(id: PartitionedId, capability: java.lang.Long) = {
+	nodesForOneReplica(id, capability, 0L)
+      }
+
       def nodesForOneReplica(id: PartitionedId, capability: java.lang.Long, persistentCapability: java.lang.Long) = {
         val replica = scalaBalancer.nodesForOneReplica(id, capability, persistentCapability)
         val result = new java.util.HashMap[Node, java.util.Set[java.lang.Integer]](replica.size)
@@ -29,6 +33,8 @@ class ScalaLbfToJavaLbf[PartitionedId](scalaLbf: SPartitionedLoadBalancerFactory
 
       def nextNode(id: PartitionedId) = nextNode(id, 0L, 0L)
 
+      def nextNode(id: PartitionedId, capability: java.lang.Long) = nextNode(id, capability, 0L)
+
       def nextNode(id: PartitionedId, capability: java.lang.Long, persistentCapability: java.lang.Long) =  {
         scalaBalancer.nextNode(id, capability, persistentCapability) match {
           case Some(n) =>n
@@ -37,6 +43,8 @@ class ScalaLbfToJavaLbf[PartitionedId](scalaLbf: SPartitionedLoadBalancerFactory
       }
 
       def nodesForPartitionedId(id: PartitionedId) = nodesForPartitionedId(id, 0L, 0L)
+
+      def nodesForPartitionedId(id: PartitionedId, capability: java.lang.Long) = nodesForPartitionedId(id, capability, 0L)
 
       def nodesForPartitionedId(id: PartitionedId, capability: java.lang.Long, persistentCapability: java.lang.Long) = {
         val set = scalaBalancer.nodesForPartitionedId(id, capability, persistentCapability)
@@ -47,6 +55,7 @@ class ScalaLbfToJavaLbf[PartitionedId](scalaLbf: SPartitionedLoadBalancerFactory
 
       def nodesForPartitions(id: PartitionedId, partitions: java.util.Set[java.lang.Integer]) = nodesForPartitions(id, partitions, 0L, 0L)
 
+      def nodesForPartitions(id: PartitionedId, partitions: java.util.Set[java.lang.Integer], capability: java.lang.Long) = nodesForPartitions(id, partitions, capability, 0L)
       def nodesForPartitions(id: PartitionedId, partitions:java.util.Set[java.lang.Integer], capability: java.lang.Long, persistentCapability: java.lang.Long) =  {
         val replica = scalaBalancer.nodesForPartitions(id, partitions, capability, persistentCapability)
         val result = new java.util.HashMap[Node, java.util.Set[java.lang.Integer]](replica.size)
