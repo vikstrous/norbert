@@ -43,15 +43,18 @@ package object norbertutils {
 
   // TODO: Put this into a utility somewhere? Scala's concurrent getOrElseUpdate is not atomic, unlike this guy
   def atomicCreateIfAbsent[K, V](map: ConcurrentMap[K, V], key: K)(fn: K => V): V = {
-    map.synchronized {
-      val oldValue = map.get(key)
-      if(oldValue == null) {
-        val newValue = fn(key)
-        map.putIfAbsent(key, newValue)
-        map.get(key)
-      } else {
-        oldValue
+    val oldValue = map.get(key)
+    if(oldValue == null) {
+      map.synchronized {
+        val oldValue2 = map.get(key)
+        if(oldValue2 == null) {
+          val newValue = fn(key)
+          map.putIfAbsent(key, newValue)
+          map.get(key)
+        }
       }
+    } else {
+      oldValue
     }
   }
 
