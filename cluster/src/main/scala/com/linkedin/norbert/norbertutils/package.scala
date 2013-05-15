@@ -51,6 +51,8 @@ package object norbertutils {
           val newValue = fn(key)
           map.putIfAbsent(key, newValue)
           map.get(key)
+        } else {
+          oldValue2
         }
       }
     } else {
