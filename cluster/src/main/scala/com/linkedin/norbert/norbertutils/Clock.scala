@@ -21,16 +21,21 @@ trait ClockComponent {
 }
 
 trait Clock {
-  def getCurrentTime: Long
+  def getCurrentTimeMilliseconds: Long
+  //do not use this for absolute time
+  //only for computing intervals
+  def getCurrentTimeOffsetMicroseconds: Long
 }
 
 object MockClock extends Clock {
   var currentTime = 0L
-  override def getCurrentTime = currentTime
+  override def getCurrentTimeMilliseconds = currentTime
+  override def getCurrentTimeOffsetMicroseconds = currentTime
 }
 
 object SystemClock extends Clock {
-  def getCurrentTime = System.currentTimeMillis
+  def getCurrentTimeOffsetMicroseconds = System.nanoTime/1000
+  def getCurrentTimeMilliseconds = System.currentTimeMillis
 }
 
 object SystemClockComponent extends ClockComponent {

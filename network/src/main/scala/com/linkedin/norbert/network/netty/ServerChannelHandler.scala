@@ -184,6 +184,8 @@ trait NetworkServerStatisticsMBean {
   def getRequestsPerSecond: Int
   def getAverageRequestProcessingTime: Double
   def getMedianTime: Double
+  def get90PercentileTime: Double
+  def get99PercentileTime: Double
 }
 
 class NetworkServerStatisticsMBeanImpl(serviceName: String, val stats: CachedNetworkStatistics[Int, UUID])
@@ -199,5 +201,9 @@ class NetworkServerStatisticsMBeanImpl(serviceName: String, val stats: CachedNet
 
     safeDivide(total.toDouble, size)(0.0)
   } getOrElse(0.0)
+
+  def get90PercentileTime = stats.getStatistics(0.90).map(_.finished.values.map(_.percentile)).flatten.sum
+
+  def get99PercentileTime = stats.getStatistics(0.99).map(_.finished.values.map(_.percentile)).flatten.sum 
 }
 

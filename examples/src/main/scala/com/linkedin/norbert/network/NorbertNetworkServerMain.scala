@@ -62,20 +62,20 @@ object NorbertNetworkServerMain {
   class LogFilter extends NettyServerFilter  {
     val clock = SystemClock
     def onRequest(request: Any, context: RequestContext)
-    { context.attributes += ("START_TIMER" -> clock.getCurrentTime) }
+    { context.attributes += ("START_TIMER" -> clock.getCurrentTimeOffsetMicroseconds) }
 
     def onResponse(response: Any, context: RequestContext)
     { val start: Long = context.attributes.getOrElse("START_TIMER", -1).asInstanceOf[Long]
-      println("server side time logging: " + (clock.getCurrentTime - start) + " ms.")
+      println("server side time logging: " + (clock.getCurrentTimeOffsetMicroseconds - start) + " micros.")
     }
 
     def onMessage(message: NorbertMessage, context: RequestContext) =
-    { context.attributes += ("PRE_SERIALIZATION" -> clock.getCurrentTime) }
+    { context.attributes += ("PRE_SERIALIZATION" -> clock.getCurrentTimeOffsetMicroseconds) }
 
     def postMessage(message: NorbertMessage, context: RequestContext) =
     {
       val start: Long = context.attributes.getOrElse("PRE_SERIALIZATION", -1).asInstanceOf[Long]
-      println("server side time logging including serialization: " + (clock.getCurrentTime - start) + " ms.")
+      println("server side time logging including serialization: " + (clock.getCurrentTimeOffsetMicroseconds - start) + " micros.")
     }
 
     def onError(error: Exception, context: RequestContext)
