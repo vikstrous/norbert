@@ -32,7 +32,7 @@ class MessageExecutorSpec extends Specification with Mockito with WaitFor with S
   val filters = new MutableList[Filter]
   filters ++= (List(filter1, filter2))
 
-  val messageExecutor = new ThreadPoolMessageExecutor("service",
+  val messageExecutor = new ThreadPoolMessageExecutor(None, "service",
     messageHandlerRegistry,
     filters,
     1000L,

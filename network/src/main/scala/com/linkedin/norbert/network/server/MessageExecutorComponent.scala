@@ -47,7 +47,8 @@ trait MessageExecutor {
   def shutdown: Unit
 }
 
-class ThreadPoolMessageExecutor(serviceName: String,
+class ThreadPoolMessageExecutor(clientName: Option[String],
+                                serviceName: String,
                                 messageHandlerRegistry: MessageHandlerRegistry,
                                 val filters: MutableList[Filter],
                                 requestTimeout: Long,
@@ -56,7 +57,8 @@ class ThreadPoolMessageExecutor(serviceName: String,
                                 keepAliveTime: Int,
                                 maxWaitingQueueSize: Int,
                                 requestStatisticsWindow: Long) extends MessageExecutor with Logging {
-  def this(serviceName: String,
+  def this(clientName: Option[String],
+           serviceName: String,
            messageHandlerRegistry: MessageHandlerRegistry,
            requestTimeout: Long,
            corePoolSize: Int,
@@ -64,13 +66,13 @@ class ThreadPoolMessageExecutor(serviceName: String,
            keepAliveTime: Int,
            maxWaitingQueueSize: Int,
            requestStatisticsWindow: Long) =
-    this(serviceName, messageHandlerRegistry, new MutableList[Filter], requestTimeout, corePoolSize, maxPoolSize, keepAliveTime, maxWaitingQueueSize, requestStatisticsWindow)
+    this(clientName, serviceName, messageHandlerRegistry, new MutableList[Filter], requestTimeout, corePoolSize, maxPoolSize, keepAliveTime, maxWaitingQueueSize, requestStatisticsWindow)
 
   private val statsActor = CachedNetworkStatistics[Int, Int](SystemClock, requestStatisticsWindow, 200L)
   private val totalNumRejected = new AtomicInteger
 
   val requestQueue = new ArrayBlockingQueue[Runnable](maxWaitingQueueSize)
-  val statsJmx = JMX.register(new RequestProcessorMBeanImpl(serviceName, statsActor, requestQueue))
+  val statsJmx = JMX.register(new RequestProcessorMBeanImpl(clientName, serviceName, statsActor, requestQueue))
 
   private val threadPool = new ThreadPoolExecutor(corePoolSize, maxPoolSize, keepAliveTime, TimeUnit.SECONDS, requestQueue,
     new NamedPoolThreadFactory("norbert-message-executor")) {
@@ -167,8 +169,8 @@ class ThreadPoolMessageExecutor(serviceName: String,
     def getMedianTime: Double
   }
 
-  class RequestProcessorMBeanImpl(serviceName: String, val stats: CachedNetworkStatistics[Int, Int], queue: ArrayBlockingQueue[Runnable])
-    extends MBean(classOf[RequestProcessorMBean], JMX.name(None, serviceName)) with RequestProcessorMBean {
+  class RequestProcessorMBeanImpl(clientName: Option[String], serviceName: String, val stats: CachedNetworkStatistics[Int, Int], queue: ArrayBlockingQueue[Runnable])
+    extends MBean(classOf[RequestProcessorMBean], JMX.name(clientName, serviceName)) with RequestProcessorMBean {
     def getQueueSize = queue.size
 
     def getTotalNumRejected = totalNumRejected.get.abs
