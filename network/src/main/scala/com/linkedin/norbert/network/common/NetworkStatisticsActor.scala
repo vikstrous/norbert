@@ -24,7 +24,7 @@ case class CacheMaintainer[T](clock: Clock, ttl: Long, fn: () => T) {
 
   private def refresh {
     val lut = lastUpdateTime.get
-    val now = clock.getCurrentTime
+    val now = clock.getCurrentTimeMilliseconds
 
     if(item == null || now - lut > ttl) {
       // Let one thread pass through to update the calculation
@@ -64,9 +64,10 @@ class CachedNetworkStatistics[GroupIdType, RequestIdType](private val stats: Net
 
   def reset { stats.reset }
 
-  private def calculate(map: Map[GroupIdType, Array[Int]], p: Double) = {
+  private def calculate(map: Map[GroupIdType, Array[Long]], p: Double) = {
     map.mapValues { v =>
       StatsEntry(calculatePercentile(v, p), v.length, v.sum)
+      //StatsEntry(calculatePercentile(v,p), v.length, 0)
     }
   }
 
@@ -86,20 +87,20 @@ class CachedNetworkStatistics[GroupIdType, RequestIdType](private val stats: Net
     }.get
   }
 
-  private def rps(data: Array[(Long, Int)]): Int = {
-    val now = clock.getCurrentTime
+  private def rps(data: Array[(Long, Long)]): Int = {
+    val now = clock.getCurrentTimeOffsetMicroseconds
 
-    implicit val timeOrdering: Ordering[(Long, Int)] = new Ordering[(Long, Int)] {
-      def compare(x: (Long, Int), y: (Long, Int)) = (x._1 - y._1).asInstanceOf[Int]
+    implicit val timeOrdering: Ordering[(Long, Long)] = new Ordering[(Long, Long)] {
+      def compare(x: (Long, Long), y: (Long, Long)) = (x._1 - y._1).asInstanceOf[Int]
     }
 
-    val bs = binarySearch(data, (now - 1000L, 0))
+    val bs = binarySearch(data, (now - 1000000L, 0L))
     val idx = if(bs < 0) -bs - 1 else bs
     data.size - idx
   }
 }
 
-case class StatsEntry(percentile: Double, size: Int, total: Int)
+case class StatsEntry(percentile: Double, size: Int, total: Long)
 case class JoinedStatistics[K](finished: Map[K, StatsEntry],
                                pending: Map[K, StatsEntry],
                                rps: () => Map[K, Int],

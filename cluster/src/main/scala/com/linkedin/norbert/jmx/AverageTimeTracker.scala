@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 // Threadsafe. Writers should always complete more or less instantly. Readers work via copy-on-write.
 class FinishedRequestTimeTracker(clock: Clock, interval: Long) {
-  private val q = new java.util.concurrent.ConcurrentLinkedQueue[(Long, Int)]()
+  private val q = new java.util.concurrent.ConcurrentLinkedQueue[(Long, Long)]()
   private val currentlyCleaning = new java.util.concurrent.atomic.AtomicBoolean
 
   private def clean {
@@ -40,7 +40,7 @@ class FinishedRequestTimeTracker(clock: Clock, interval: Long) {
         return
 
       val (completion, processingTime) = head
-      if(clock.getCurrentTime - completion > interval) {
+      if(clock.getCurrentTimeOffsetMicroseconds - completion > interval) {
         q.remove(head)
       } else {
         return
@@ -48,17 +48,17 @@ class FinishedRequestTimeTracker(clock: Clock, interval: Long) {
     }
   }
 
-  def addTime(processingTime: Int) {
+  def addTime(processingTime: Long) {
     clean
-    q.offer( (clock.getCurrentTime, processingTime) )
+    q.offer( (clock.getCurrentTimeOffsetMicroseconds, processingTime) )
   }
 
-  def getArray: Array[(Long, Int)] = {
+  def getArray: Array[(Long, Long)] = {
     clean
-    q.toArray(Array.empty[(Long, Int)])
+    q.toArray(Array.empty[(Long, Long)])
   }
 
-  def getTimings: Array[Int] = {
+  def getTimings: Array[Long] = {
     getArray.map(_._2).sorted
   }
 
@@ -82,7 +82,7 @@ class PendingRequestTimeTracker[KeyT](clock: Clock) {
 
   def beginRequest(key: KeyT) {
     numRequests.incrementAndGet
-    val now = clock.getCurrentTime
+    val now = clock.getCurrentTimeOffsetMicroseconds
     map.put(key, now)
   }
 
@@ -91,9 +91,9 @@ class PendingRequestTimeTracker[KeyT](clock: Clock) {
   }
 
   def getTimings = {
-    val now = clock.getCurrentTime
+    val now = clock.getCurrentTimeOffsetMicroseconds
     val timings = map.values.toArray(Array.empty[java.lang.Long])
-    timings.map(t => (now - t.longValue).asInstanceOf[Int]).sorted
+    timings.map(t => (now - t.longValue)).sorted
   }
 
   def reset {
@@ -115,7 +115,7 @@ class RequestTimeTracker[KeyT](clock: Clock, interval: Long) {
 
   def endRequest(key: KeyT) {
     pendingRequestTimeTracker.getStartTime(key).foreach { startTime =>
-      finishedRequestTimeTracker.addTime((clock.getCurrentTime - startTime).asInstanceOf[Int])
+      finishedRequestTimeTracker.addTime(clock.getCurrentTimeOffsetMicroseconds - startTime)
     }
     pendingRequestTimeTracker.endRequest(key)
   }

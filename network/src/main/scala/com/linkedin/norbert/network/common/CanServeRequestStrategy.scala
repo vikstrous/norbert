@@ -63,19 +63,19 @@ private[common] class SimpleBackoff(clock: Clock, minBackoffTime: Long = 100L, m
   val currBackoff = new AtomicLong(0)
 
   def notifyFailure {
-    if(clock.getCurrentTime - lastError >= minBackoffTime)
+    if(clock.getCurrentTimeMilliseconds - lastError >= minBackoffTime)
       incrementBackoff
   }
 
   private def incrementBackoff {
-    lastError = clock.getCurrentTime
+    lastError = clock.getCurrentTimeMilliseconds
     val currentBackoffTime = currBackoff.get
     val newBackoffTime = max(minBackoffTime, min(2L * currentBackoffTime, maxBackoffTime))
     currBackoff.compareAndSet(currentBackoffTime, newBackoffTime)
   }
 
   private def tryDecrementBackoff {
-   val now = clock.getCurrentTime
+   val now = clock.getCurrentTimeMilliseconds
 
    // If it's been a while since the last error, reset the backoff back to 0
     val currentBackoffTime = currBackoff.get
@@ -84,7 +84,7 @@ private[common] class SimpleBackoff(clock: Clock, minBackoffTime: Long = 100L, m
   }
 
   def available: Boolean = {
-    val now = clock.getCurrentTime
+    val now = clock.getCurrentTimeMilliseconds
     tryDecrementBackoff
     now - lastError > currBackoff.get
   }
