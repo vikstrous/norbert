@@ -23,16 +23,34 @@ trait MessageHandlerRegistryComponent {
 
 private case class MessageHandlerEntry[RequestMsg, ResponseMsg]
 (is: InputSerializer[RequestMsg, ResponseMsg], os: OutputSerializer[RequestMsg, ResponseMsg], handler: RequestMsg => ResponseMsg)
+private case class SimpleMessageHandlerEntry[RequestMsg]
+(is: RequestInputSerializer[RequestMsg], handler: RequestMsg => Unit)
 
 class MessageHandlerRegistry {
   @volatile private var handlerMap =
     Map.empty[String, MessageHandlerEntry[_ <: Any, _ <: Any]]
+  @volatile private var simpleHandlerMap =
+    Map.empty[String, SimpleMessageHandlerEntry[_ <: Any]]
 
   def registerHandler[RequestMsg, ResponseMsg](handler: RequestMsg => ResponseMsg)
                                               (implicit is: InputSerializer[RequestMsg, ResponseMsg], os: OutputSerializer[RequestMsg, ResponseMsg]) {
     if(handler == null) throw new NullPointerException
 
     handlerMap += (is.requestName -> MessageHandlerEntry(is, os, handler))
+  }
+
+  def registerSimpleHandler[RequestMsg](handler: RequestMsg => Unit)
+                                 (implicit is: RequestInputSerializer[RequestMsg]) {
+    if(handler == null) throw new NullPointerException
+
+    simpleHandlerMap += (is.requestName -> SimpleMessageHandlerEntry(is, handler))
+  }
+
+  @throws(classOf[InvalidMessageException])
+  def simpleInputSerializerFor[RequestMsg](messageName: String): RequestInputSerializer[RequestMsg] = {
+    simpleHandlerMap.get(messageName).map(_.is)
+      .getOrElse(throw buildException(messageName))
+      .asInstanceOf[RequestInputSerializer[RequestMsg]]
   }
 
   @throws(classOf[InvalidMessageException])
@@ -51,17 +69,22 @@ class MessageHandlerRegistry {
 
   @throws(classOf[InvalidMessageException])
   def handlerFor[RequestMsg, ResponseMsg](request: RequestMsg)
-                                         (implicit is: InputSerializer[RequestMsg, ResponseMsg]): RequestMsg => ResponseMsg = {
+                                         (implicit is: RequestInputSerializer[RequestMsg]): RequestMsg => ResponseMsg = {
     handlerFor[RequestMsg, ResponseMsg](is.requestName)
   }
 
+  def isSimpleMessage = simpleHandlerMap.contains _
+
   @throws(classOf[InvalidMessageException])
   def handlerFor[RequestMsg, ResponseMsg](messageName: String): RequestMsg => ResponseMsg = {
-    handlerMap.get(messageName).map(_.handler)
-      .getOrElse(throw buildException(messageName))
-      .asInstanceOf[RequestMsg => ResponseMsg]
+    handlerMap.get(messageName).map(_.handler).getOrElse(throw buildException(messageName)).asInstanceOf[RequestMsg => ResponseMsg]
   }
-  
+
+  @throws(classOf[InvalidMessageException])
+  def simpleHandlerFor[RequestMsg, ResponseMsg](messageName: String): RequestMsg => ResponseMsg = {
+    simpleHandlerMap.get(messageName).map(_.handler).getOrElse(throw buildException(messageName)).asInstanceOf[RequestMsg => ResponseMsg]
+  }
+
   def buildException(messageName: String) =
-    new InvalidMessageException("%s is not a registered method. Methods registered are %s".format(messageName, "(" + handlerMap.keys.mkString(",") + ")"))
+    new InvalidMessageException("%s is not a registered method. Methods registered are %s".format(messageName, "(" + handlerMap.keys.mkString(",") + ";" + simpleHandlerMap.keys.mkString(",") + ")"))
 }

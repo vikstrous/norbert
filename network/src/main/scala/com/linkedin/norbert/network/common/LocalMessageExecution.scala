@@ -25,9 +25,12 @@ trait LocalMessageExecution extends BaseNetworkClient {
 
   val myNode: Node
 
-  override protected def doSendRequest[RequestMsg, ResponseMsg](requestCtx: Request[RequestMsg, ResponseMsg])
-  (implicit is: InputSerializer[RequestMsg, ResponseMsg], os: OutputSerializer[RequestMsg, ResponseMsg]): Unit = {
-    if(requestCtx.node == myNode) messageExecutor.executeMessage(requestCtx.message, requestCtx.callback)
+  override protected def doSendRequest[RequestMsg](requestCtx: SimpleMessage[RequestMsg])
+                                                               (implicit is: RequestInputSerializer[RequestMsg], os: RequestOutputSerializer[RequestMsg]): Unit = {
+    if(requestCtx.node == myNode) requestCtx match {
+      case msg: Request[_, _] => messageExecutor.executeMessage(requestCtx.message, msg.callback)
+      case _ => messageExecutor.executeMessage(requestCtx.message, null)
+    }
     else super.doSendRequest(requestCtx)
   }
 }

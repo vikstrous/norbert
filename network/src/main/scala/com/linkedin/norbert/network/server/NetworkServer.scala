@@ -45,8 +45,12 @@ trait NetworkServer extends Logging {
    */
 
   def registerHandler[RequestMsg, ResponseMsg](handler: RequestMsg => ResponseMsg)
-  (implicit is: InputSerializer[RequestMsg, ResponseMsg], os: OutputSerializer[RequestMsg, ResponseMsg]) {
+                                              (implicit is: InputSerializer[RequestMsg, ResponseMsg], os: OutputSerializer[RequestMsg, ResponseMsg]) {
     messageHandlerRegistry.registerHandler(handler)
+  }
+  def registerSimpleHandler[RequestMsg](handler: RequestMsg => Unit)
+                                 (implicit is: RequestInputSerializer[RequestMsg]) {
+    messageHandlerRegistry.registerSimpleHandler(handler)
   }
 
   def addFilters(filters: List[Filter]) : Unit = messageExecutor.addFilters(filters)

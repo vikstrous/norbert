@@ -39,9 +39,9 @@ trait MessageExecutorComponent {
 
 trait MessageExecutor {
   def executeMessage[RequestMsg, ResponseMsg](request: RequestMsg, responseHandler: (Either[Exception, ResponseMsg]) => Unit)
-  (implicit is: InputSerializer[RequestMsg, ResponseMsg]) : Unit = executeMessage(request, responseHandler, None)
+                                             (implicit is: RequestInputSerializer[RequestMsg]) : Unit = executeMessage(request, responseHandler, None)
   def executeMessage[RequestMsg, ResponseMsg](request: RequestMsg, responseHandler: (Either[Exception, ResponseMsg]) => Unit, context: Option[RequestContext])
-  (implicit is: InputSerializer[RequestMsg, ResponseMsg]): Unit
+                                             (implicit is: RequestInputSerializer[RequestMsg]): Unit
   @volatile val filters : MutableList[Filter]
   def addFilters(filters: List[Filter]) : Unit = this.filters ++= (filters)
   def shutdown: Unit
@@ -90,7 +90,7 @@ class ThreadPoolMessageExecutor(clientName: Option[String],
   }
 
   def executeMessage[RequestMsg, ResponseMsg](request: RequestMsg, responseHandler: (Either[Exception, ResponseMsg]) => Unit, context: Option[RequestContext] = None)
-                                             (implicit is: InputSerializer[RequestMsg, ResponseMsg]) {
+                                             (implicit is: RequestInputSerializer[RequestMsg]) {
     val rr = new RequestRunner(request, context, filters, responseHandler, is = is)
     try {
       threadPool.execute(rr)
@@ -118,24 +118,30 @@ class ThreadPoolMessageExecutor(clientName: Option[String],
                                                        callback: (Either[Exception, ResponseMsg]) => Unit,
                                                        val queuedAt: Long = System.currentTimeMillis,
                                                        val id: Int = idGenerator.getAndIncrement.abs,
-                                                       implicit val is: InputSerializer[RequestMsg, ResponseMsg]) extends Runnable {
+                                                       implicit val is: RequestInputSerializer[RequestMsg]) extends Runnable {
     def run = {
       val now = System.currentTimeMillis
 
       if(now - queuedAt > requestTimeout) {
         totalNumRejected.incrementAndGet
         log.warn("Request timed out, ignoring! Currently = " + now + ". Queued at = " + queuedAt + ". Timeout = " + requestTimeout)
-        callback(Left(new HeavyLoadException))
+        if(callback != null){
+          callback(Left(new HeavyLoadException))
+        }
       } else {
         log.debug("Executing message: %s".format(request))
 
         val response: Option[Either[Exception, ResponseMsg]] =
         try {
           filters.foreach(filter => continueOnError(filter.onRequest(request, context.getOrElse(null))))
-          val handler = messageHandlerRegistry.handlerFor(request)
+          val handler = messageHandlerRegistry.handlerFor[RequestMsg, ResponseMsg](request)
           try {
             val response = handler(request)
-            if(response == null) None else Some(Right(response))
+            response match {
+              case null => None
+              case _:Unit => None
+              case _ => Some(Right(response))
+            }
           } catch {
             case ex: Exception =>
               log.error(ex, "Message handler threw an exception while processing message")
@@ -151,7 +157,9 @@ class ThreadPoolMessageExecutor(clientName: Option[String],
             Some(Left(ex))
         }
         response.foreach { (res) =>
-          callback(res)
+          if(callback!= null){
+            callback(res)
+          }
           res match {
             case Left(ex) => filters.reverse.foreach(filter => continueOnError(filter.onError(ex, context.getOrElse(null))))
             case Right(responseMsg) =>  filters.reverse.foreach(filter => continueOnError(filter.onResponse(responseMsg, context.getOrElse(null))))

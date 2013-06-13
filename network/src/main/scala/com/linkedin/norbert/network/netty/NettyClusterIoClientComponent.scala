@@ -33,7 +33,7 @@ trait NettyClusterIoClientComponent extends ClusterIoClientComponent {
   class NettyClusterIoClient(channelPoolFactory: ChannelPoolFactory, strategy: CanServeRequestStrategy) extends ClusterIoClient with UrlParser with Logging {
     private val channelPools = new ConcurrentHashMap[Node, ChannelPool]
 
-    def sendMessage[RequestMsg, ResponseMsg](node: Node, request: Request[RequestMsg, ResponseMsg]) {
+    def sendMessage[RequestMsg](node: Node, request: SimpleMessage[RequestMsg]) {
       if (node == null || request == null) throw new NullPointerException
 
       val pool = getChannelPool(node)

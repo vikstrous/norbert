@@ -118,12 +118,21 @@ class ServerChannelHandler(clientName: Option[String],
 
     statsActor.beginRequest(0, context.requestId)
 
-    val (handler, is, os) = try {
-      val handler: Any => Any = messageHandlerRegistry.handlerFor(messageName)
-      val is: InputSerializer[Any, Any] = messageHandlerRegistry.inputSerializerFor(messageName)
-      val os: OutputSerializer[Any, Any] = messageHandlerRegistry.outputSerializerFor(messageName)
+    var cb: (Either[Exception, Any]) => Unit = null
+    var ris: RequestInputSerializer[Any] = null
 
-      (handler, is, os)
+    try {
+      if (messageHandlerRegistry.isSimpleMessage(messageName)){
+        ris = messageHandlerRegistry.simpleInputSerializerFor(messageName)
+      } else {
+        val is = messageHandlerRegistry.inputSerializerFor(messageName)
+        val os = messageHandlerRegistry.outputSerializerFor(messageName)
+
+        cb = (either: Either[Exception, Any]) => {
+          responseHandler(context, e.getChannel, either)(is, os)
+        }
+        ris = is
+      }
     } catch {
       case ex: InvalidMessageException =>
         Channels.write(ctx, Channels.future(channel), (context, ResponseHelper.errorResponse(context.requestId, ex)))
@@ -132,12 +141,8 @@ class ServerChannelHandler(clientName: Option[String],
         throw ex
     }
 
-    val request = is.requestFromBytes(requestBytes)
-
     try {
-      messageExecutor.executeMessage(request, (either: Either[Exception, Any]) => {
-        responseHandler(context, e.getChannel, either)(is, os)
-      }, Some(context))(is)
+      messageExecutor.executeMessage(ris.requestFromBytes(requestBytes), cb, Some(context))(ris)
     }
     catch {
       case ex: HeavyLoadException =>

@@ -72,7 +72,7 @@ class ChannelPool(address: InetSocketAddress, maxConnections: Int, openTimeoutMi
   }
 
   private val pool = new ArrayBlockingQueue[PoolEntry](maxConnections)
-  private val waitingWrites = new LinkedBlockingQueue[Request[_, _]]
+  private val waitingWrites = new LinkedBlockingQueue[SimpleMessage[_]]
   private val poolSize = new AtomicInteger(0)
   private val closed = new AtomicBoolean
   private val requestsSent = new AtomicInteger(0)
@@ -89,7 +89,7 @@ class ChannelPool(address: InetSocketAddress, maxConnections: Int, openTimeoutMi
     def getNumberRequestsSent = requestsSent.get.abs
   })
 
-  def sendRequest[RequestMsg, ResponseMsg](request: Request[RequestMsg, ResponseMsg]): Unit = if (closed.get) {
+  def sendRequest[RequestMsg](request: SimpleMessage[RequestMsg]): Unit = if (closed.get) {
     throw new ChannelPoolClosedException
   } else {
     checkoutChannel match {
@@ -157,7 +157,7 @@ class ChannelPool(address: InetSocketAddress, maxConnections: Int, openTimeoutMi
     Option(poolEntry)
   }
 
-  private def openChannel(request: Request[_, _]) {
+  private def openChannel(request: SimpleMessage[_]) {
     if (poolSize.incrementAndGet > maxConnections) {
       poolSize.decrementAndGet
       log.warn("Unable to open channel, pool is full. Waiting for another channel to return to queue before processing")
@@ -186,7 +186,7 @@ class ChannelPool(address: InetSocketAddress, maxConnections: Int, openTimeoutMi
     }
   }
 
-  private def writeRequestToChannel(request: Request[_, _], channel: Channel) {
+  private def writeRequestToChannel(request: SimpleMessage[_], channel: Channel) {
     log.debug("Writing to %s: %s".format(channel, request))
     requestsSent.incrementAndGet
     channel.write(request).addListener(new ChannelFutureListener {

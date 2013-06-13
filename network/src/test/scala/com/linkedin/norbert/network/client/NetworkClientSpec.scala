@@ -157,9 +157,9 @@ class NetworkClientSpec extends BaseNetworkClientSpecification {
           val loadBalancerFactory = mock[LoadBalancerFactory]
           val clusterIoClient = new ClusterIoClient {
             var invocationCount: Int = 0
-            def sendMessage[RequestMsg, ResponseMsg](node: Node, requestCtx: Request[RequestMsg, ResponseMsg]) {
+            def sendMessage[RequestMsg](node: Node, requestCtx: SimpleMessage[RequestMsg]) {
               invocationCount += 1
-              requestCtx.onFailure(new Exception with RequestAccess[Request[RequestMsg, ResponseMsg]] {
+              requestCtx.onFailure(new Exception with RequestAccess[SimpleMessage[RequestMsg]] {
                 def request = requestCtx
               })
             }

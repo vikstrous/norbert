@@ -23,7 +23,7 @@ trait ClusterIoClientComponent {
   val clusterIoClient: ClusterIoClient
 
   trait ClusterIoClient {
-    def sendMessage[RequestMsg, ResponseMsg](node: Node, request: Request[RequestMsg, ResponseMsg]): Unit
+    def sendMessage[RequestMsg](node: Node, request: SimpleMessage[RequestMsg]): Unit
     def nodesChanged(nodes: Set[Node]): Set[Endpoint]
     def shutdown: Unit
   }

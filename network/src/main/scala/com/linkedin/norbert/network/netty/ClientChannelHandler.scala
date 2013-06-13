@@ -97,11 +97,19 @@ class ClientChannelHandler(clientName: Option[String],
   private val statsJMX = JMX.register(new NetworkClientStatisticsMBeanImpl(clientName, serviceName, stats))
 
   override def writeRequested(ctx: ChannelHandlerContext, e: MessageEvent) = {
-    val request = e.getMessage.asInstanceOf[Request[_, _]]
-    log.debug("Writing request: %s".format(request))
+    val request = e.getMessage.asInstanceOf[SimpleMessage[_]]
 
-    requestMap.put(request.id, request)
-    stats.beginRequest(request.node, request.id)
+    // Wait for responses if the message is of the type that has a repsonse
+    e.getMessage match {
+      case msg : Request[_, _] => {
+        log.debug("Writing request: %s".format(msg))
+        requestMap.put(msg.id, msg)
+        stats.beginRequest(msg.node, msg.id)
+      }
+      case msg: SimpleMessage[_] => {
+        log.debug("Writing message: %s".format(msg))
+      }
+    }
 
     val message = NorbertProtos.NorbertMessage.newBuilder
     message.setRequestIdMsb(request.id.getMostSignificantBits)

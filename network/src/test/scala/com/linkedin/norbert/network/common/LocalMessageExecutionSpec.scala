@@ -35,7 +35,7 @@ class LocalMessageExecutionSpec extends Specification with Mockito with SampleMe
     val filters = new MutableList[Filter]
     def shutdown = {}
 
-    def executeMessage[RequestMsg, ResponseMsg](request: RequestMsg, responseHandler: (Either[Exception, ResponseMsg]) => Unit, context: Option[RequestContext])(implicit is: InputSerializer[RequestMsg, ResponseMsg]) = {
+    def executeMessage[RequestMsg, ResponseMsg](request: RequestMsg, responseHandler: (Either[Exception, ResponseMsg]) => Unit, context: Option[RequestContext])(implicit is: RequestInputSerializer[RequestMsg]) = {
       called = true
       this.request = request
 

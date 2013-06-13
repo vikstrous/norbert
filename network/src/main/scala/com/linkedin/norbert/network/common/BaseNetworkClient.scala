@@ -148,9 +148,9 @@ trait BaseNetworkClient extends Logging {
   protected def updateLoadBalancer(nodes: Set[Endpoint]): Unit
 
   def addFilters(clientFilters: List[Filter]) = { filters = clientFilters }
-  
-  protected def doSendRequest[RequestMsg, ResponseMsg](requestCtx: Request[RequestMsg, ResponseMsg])
-  (implicit is: InputSerializer[RequestMsg, ResponseMsg], os: OutputSerializer[RequestMsg, ResponseMsg]): Unit = {
+
+  protected def doSendRequest[RequestMsg](requestCtx: SimpleMessage[RequestMsg])
+                                         (implicit is: RequestInputSerializer[RequestMsg], os: RequestOutputSerializer[RequestMsg]): Unit = {
     filters.foreach { filter => filter.onRequest(requestCtx) }
     clusterIoClient.sendMessage(requestCtx.node, requestCtx)
   }

@@ -24,14 +24,44 @@ import java.io.{OutputStream, InputStream}
 trait Serializer[RequestMsg, ResponseMsg] extends InputSerializer[RequestMsg, ResponseMsg] with OutputSerializer[RequestMsg, ResponseMsg]
 
 // Split up for correct variance
-trait OutputSerializer[-RequestMsg, -ResponseMsg] {
-  def responseName: String
-  def requestToBytes(request: RequestMsg): Array[Byte]
-  def responseToBytes(response: ResponseMsg): Array[Byte]
-}
 
-trait InputSerializer[+RequestMsg, +ResponseMsg] {
+// You can serialize a superclass of RequestMsg/ResponseMsg
+trait OutputSerializer[-RequestMsg, -ResponseMsg] extends ResponseOutputSerializer[ResponseMsg] with RequestOutputSerializer[RequestMsg] {}
+
+// You can deserealze into a subclass of RequestMsg/ResponseMsg
+trait InputSerializer[+RequestMsg, +ResponseMsg] extends ResponseInputSerializer[ResponseMsg] with RequestInputSerializer[RequestMsg] {}
+//
+//object InputSerializer {
+//  def apply[RequestMsg](ris:RequestInputSerializer[RequestMsg]) = {
+//    new InputSerializer[RequestMsg, Unit](){
+//      def requestName = ris.requestName
+//      def requestFromBytes(bytes: Array[Byte]) = ris.requestFromBytes(bytes)
+//      def responseFromBytes(bytes: Array[Byte]) {
+//        return
+//      }
+//    }
+//  }
+//}
+
+// The requestName and responseName are split up awkwardly between the serializers for backwards compatibility
+// Originally InputSerializer and OutputSerializer were the only serializers and that's why requestName and
+// responseName were a part of them
+// However, for one way messages we need only a RequestSerializer, but we still split it for correct variance
+
+trait RequestInputSerializer[+RequestMsg] {
   def requestName: String
   def requestFromBytes(bytes: Array[Byte]): RequestMsg
+}
+
+trait RequestOutputSerializer[-RequestMsg] {
+  def requestToBytes(request: RequestMsg): Array[Byte]
+}
+
+trait ResponseInputSerializer[+ResponseMsg] {
   def responseFromBytes(bytes: Array[Byte]): ResponseMsg
+}
+
+trait ResponseOutputSerializer[-ResponseMsg] {
+  def responseName: String
+  def responseToBytes(response: ResponseMsg): Array[Byte]
 }

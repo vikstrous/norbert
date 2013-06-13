@@ -62,7 +62,7 @@ class MessageExecutorSpec extends Specification with Mockito with WaitFor with S
     }
 
     "find the handler associated with the specified message" in {
-      messageHandlerRegistry.handlerFor(request) returns returnHandler _
+      messageHandlerRegistry.handlerFor[Ping, Ping](request).returns(returnHandler _)
 
       messageExecutor.executeMessage(request, (either: Either[Exception, Ping]) => null, None)
 
@@ -77,7 +77,7 @@ class MessageExecutorSpec extends Specification with Mockito with WaitFor with S
         wasCalled = true
         message
       }
-      messageHandlerRegistry.handlerFor(request) returns h _
+      messageHandlerRegistry.handlerFor[Ping, Ping](request) returns h _
 
       messageExecutor.executeMessage(request, (either: Either[Exception, Ping]) => null, None)
 
@@ -86,7 +86,7 @@ class MessageExecutorSpec extends Specification with Mockito with WaitFor with S
 
     "execute the responseHandler with Right(message) if the handler returns a valid message" in {
 //      messageHandlerRegistry.validResponseFor(request, request) returns true
-      messageHandlerRegistry.handlerFor(request) returns returnHandler _
+      messageHandlerRegistry.handlerFor[Ping, Ping](request) returns returnHandler _
 
       messageExecutor.executeMessage(request, handler _)
 
@@ -97,7 +97,7 @@ class MessageExecutorSpec extends Specification with Mockito with WaitFor with S
 
     "not execute the responseHandler if the handler returns null" in {
 //      messageHandlerRegistry.validResponseFor(request, null) returns true
-      messageHandlerRegistry.handlerFor(request) returns nullHandler _
+      messageHandlerRegistry.handlerFor[Ping, Ping](request) returns nullHandler _
 
       messageExecutor.executeMessage(request, handler _)
 
@@ -105,7 +105,7 @@ class MessageExecutorSpec extends Specification with Mockito with WaitFor with S
     }
 
     "execute the responseHandler with Left(ex) if the handler throws an exception" in {
-      messageHandlerRegistry.handlerFor(request) returns throwsHandler _
+      messageHandlerRegistry.handlerFor[Ping, Ping](request) returns throwsHandler _
 
       messageExecutor.executeMessage(request, handler _)
 
@@ -114,7 +114,7 @@ class MessageExecutorSpec extends Specification with Mockito with WaitFor with S
     }
 
     "not execute the responseHandler if the message is not registered" in {
-      messageHandlerRegistry.handlerFor(request) throws new InvalidMessageException("")
+      messageHandlerRegistry.handlerFor[Ping, Ping](request) throws new InvalidMessageException("")
 
       messageExecutor.executeMessage(request, handler _)
 
@@ -126,7 +126,7 @@ class MessageExecutorSpec extends Specification with Mockito with WaitFor with S
     }
 
     "filters are executed when message is valid" in {
-      messageHandlerRegistry.handlerFor(request) returns returnHandler _
+      messageHandlerRegistry.handlerFor[Ping, Ping](request) returns returnHandler _
       messageExecutor.executeMessage(request, (either: Either[Exception, Ping]) => null, Some(requestContext))
 
       waitFor(5.ms)
@@ -135,7 +135,7 @@ class MessageExecutorSpec extends Specification with Mockito with WaitFor with S
     }
 
     "filters are not executed when handler return null" in {
-      messageHandlerRegistry.handlerFor(request) returns nullHandler _
+      messageHandlerRegistry.handlerFor[Ping, Ping](request) returns nullHandler _
       messageExecutor.executeMessage(request, handler _, Some(requestContext))
 
       waitFor(5.ms)
@@ -144,7 +144,7 @@ class MessageExecutorSpec extends Specification with Mockito with WaitFor with S
     }
 
     "filters are executed when handler throws an exception" in {
-      messageHandlerRegistry.handlerFor(request) returns throwsHandler _
+      messageHandlerRegistry.handlerFor[Ping, Ping](request) returns throwsHandler _
       messageExecutor.executeMessage(request, handler _, Some(requestContext))
       
       waitFor(5.ms)
@@ -156,7 +156,7 @@ class MessageExecutorSpec extends Specification with Mockito with WaitFor with S
 
     "filters are executed when message is not registered" in {
       val ie = new InvalidMessageException("")
-      messageHandlerRegistry.handlerFor(request) throws ie
+      messageHandlerRegistry.handlerFor[Ping, Ping](request) throws ie
       messageExecutor.executeMessage(request, handler _, Some(requestContext))
 
       waitFor(5.ms)

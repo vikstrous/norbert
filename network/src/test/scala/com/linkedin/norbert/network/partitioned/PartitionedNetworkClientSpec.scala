@@ -510,9 +510,9 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
           val loadBalancerFactory = mock[PartitionedLoadBalancerFactory[Int]]
           val clusterIoClient = new ClusterIoClient {
             var invocationCount: Int = 0
-            def sendMessage[RequestMsg, ResponseMsg](node: Node, requestCtx: Request[RequestMsg, ResponseMsg]) {
+            def sendMessage[RequestMsg](node: Node, requestCtx: SimpleMessage[RequestMsg]) {
               invocationCount += 1
-              requestCtx.onFailure(new Exception with RequestAccess[Request[RequestMsg, ResponseMsg]] {
+              requestCtx.onFailure(new Exception with RequestAccess[SimpleMessage[RequestMsg]] {
                 def request = requestCtx
               })
             }
@@ -551,10 +551,10 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
         val loadBalancerFactory = mock[PartitionedLoadBalancerFactory[Int]]
         val clusterIoClient = new ClusterIoClient {
           var succ: Boolean = false
-          def sendMessage[RequestMsg, ResponseMsg](node: Node, requestCtx: Request[RequestMsg, ResponseMsg]) {
+          def sendMessage[RequestMsg](node: Node, requestCtx: SimpleMessage[RequestMsg]) {
             if (!succ) {
               succ = true
-              requestCtx.onFailure(new RemoteException("FooBar", "ServerError") with RequestAccess[Request[RequestMsg, ResponseMsg]] {
+              requestCtx.onFailure(new RemoteException("FooBar", "ServerError") with RequestAccess[SimpleMessage[RequestMsg]] {
                 def request = requestCtx
               })
             } else {
@@ -599,10 +599,10 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
         val loadBalancerFactory = mock[PartitionedLoadBalancerFactory[Int]]
         val clusterIoClient = new ClusterIoClient {
           var failOnce: Boolean = true
-          def sendMessage[RequestMsg, ResponseMsg](node: Node, requestCtx: Request[RequestMsg, ResponseMsg]) {
+          def sendMessage[RequestMsg](node: Node, requestCtx: SimpleMessage[RequestMsg]) {
             if (failOnce) {
               failOnce = false
-              requestCtx.onFailure(new RemoteException("FooBar", "ServerError") with RequestAccess[Request[RequestMsg, ResponseMsg]] {
+              requestCtx.onFailure(new RemoteException("FooBar", "ServerError") with RequestAccess[SimpleMessage[RequestMsg]] {
                 def request = requestCtx
               })
             } else {
@@ -640,9 +640,9 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
         val loadBalancerFactory = mock[PartitionedLoadBalancerFactory[Int]]
         val clusterIoClient = new ClusterIoClient {
           var invocationCount: Int = 0
-          def sendMessage[RequestMsg, ResponseMsg](node: Node, requestCtx: Request[RequestMsg, ResponseMsg]) {
+          def sendMessage[RequestMsg](node: Node, requestCtx: SimpleMessage[RequestMsg]) {
             invocationCount += 1
-            requestCtx.onFailure(new Exception with RequestAccess[Request[RequestMsg, ResponseMsg]] {
+            requestCtx.onFailure(new Exception with RequestAccess[SimpleMessage[RequestMsg]] {
               def request = requestCtx
             })
           }
@@ -675,9 +675,9 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
         val loadBalancerFactory = mock[PartitionedLoadBalancerFactory[Int]]
         val clusterIoClient = new ClusterIoClient {
           var invocationCount: Int = 0
-          def sendMessage[RequestMsg, ResponseMsg](node: Node, requestCtx: Request[RequestMsg, ResponseMsg]) {
+          def sendMessage[RequestMsg](node: Node, requestCtx: SimpleMessage[RequestMsg]) {
             invocationCount += 1
-            requestCtx.onFailure(new Exception with RequestAccess[Request[RequestMsg, ResponseMsg]] {
+            requestCtx.onFailure(new Exception with RequestAccess[SimpleMessage[RequestMsg]] {
               def request = requestCtx
             })
           }
@@ -709,9 +709,9 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
         val loadBalancerFactory = mock[PartitionedLoadBalancerFactory[Int]]
         val clusterIoClient = new ClusterIoClient {
           var invocationCount: Int = 0
-          def sendMessage[RequestMsg, ResponseMsg](node: Node, requestCtx: Request[RequestMsg, ResponseMsg]) {
+          def sendMessage[RequestMsg](node: Node, requestCtx: SimpleMessage[RequestMsg]) {
             invocationCount += 1
-            requestCtx.onFailure(new Exception with RequestAccess[Request[RequestMsg, ResponseMsg]] {
+            requestCtx.onFailure(new Exception with RequestAccess[SimpleMessage[RequestMsg]] {
               def request = requestCtx
             })
           }
