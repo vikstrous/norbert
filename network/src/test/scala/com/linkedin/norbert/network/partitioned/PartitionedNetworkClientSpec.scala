@@ -451,7 +451,7 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
       }
 
       "request.retryAttempt >= maxRetry" in {
-        val req: Request[Ping, Ping] = spy(PartitionedRequest[Int, Ping, Ping](null, null, null, null, null, null, callback, MAX_RETRY))
+        val req: Request[Ping, Ping] = spy(PartitionedRequest[Int, Ping, Ping](null, null, null, null, null, null, Some(callback), MAX_RETRY))
         val ra: Exception with RequestAccess[Request[Ping, Ping]] = new Exception with RequestAccess[Request[Ping, Ping]] {
           def request = req
         }
@@ -484,7 +484,7 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
 
         networkClient.start
 
-        var req: Request[Ping, Ping] = spy(PartitionedRequest[Int, Ping, Ping](null, nodes(1), null, null, null, null, callback, 0))
+        var req: Request[Ping, Ping] = spy(PartitionedRequest[Int, Ping, Ping](null, nodes(1), null, null, null, null, Some(callback), 0))
         val ra: Exception with RequestAccess[Request[Ping, Ping]] = new Exception with RequestAccess[Request[Ping, Ping]] {
           def request = req
         }
