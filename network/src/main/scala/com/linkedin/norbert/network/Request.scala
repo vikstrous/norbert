@@ -47,8 +47,6 @@ class Request[RequestMsg, ResponseMsg](override val message: RequestMsg, overrid
   override def toString: String = {
     "[Request: %s, %s, retry=%d]".format(message, node, retryAttempt)
   }
-
-  // TODO: Use the id for overriding equals and hashcode
 }
 
 object SimpleMessage {
@@ -121,6 +119,7 @@ object PartitionedRequest {
 
 }
 
+// TODO: Use the id for overriding equals and hashcode
 class PartitionedRequest[PartitionedId, RequestMsg, ResponseMsg](override val message: RequestMsg,
                                                                  override val node: Node,
                                                                  override val partitionedIds: Set[PartitionedId],
