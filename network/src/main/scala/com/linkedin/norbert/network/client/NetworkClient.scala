@@ -108,7 +108,7 @@ trait NetworkClient extends BaseNetworkClient {
 
   def sendRequest[RequestMsg, ResponseMsg](request: RequestMsg, callback: Either[Throwable, ResponseMsg] => Unit, capability: Option[Long], persistentCapability: Option[Long])
   (implicit is: InputSerializer[RequestMsg, ResponseMsg], os: OutputSerializer[RequestMsg, ResponseMsg]): Unit =  doIfConnected {
-     sendRequest(request, Some(callback), 0, capability, persistentCapability)
+     sendRequest(request, callback, 0, capability, persistentCapability)
   }
   
   /**
@@ -156,14 +156,14 @@ trait NetworkClient extends BaseNetworkClient {
    */
   def sendRequest[RequestMsg, ResponseMsg](request: RequestMsg, callback: Either[Throwable, ResponseMsg] => Unit, maxRetry: Int)
   (implicit is: InputSerializer[RequestMsg, ResponseMsg], os: OutputSerializer[RequestMsg, ResponseMsg]): Unit =
-    sendRequest(request, Some(callback), maxRetry, None, None)
+    sendRequest(request, callback, maxRetry, None, None)
 
   def sendRequest[RequestMsg, ResponseMsg](request: RequestMsg, callback: Either[Throwable, ResponseMsg] => Unit, maxRetry: Int, capability: Option[Long])
   (implicit is: InputSerializer[RequestMsg, ResponseMsg], os:OutputSerializer[RequestMsg, ResponseMsg]): Unit = 
-    sendRequest(request, Some(callback), maxRetry, capability, None)
-  
-  def sendRequest[RequestMsg, ResponseMsg](request: RequestMsg, callback: Option[Either[Throwable, ResponseMsg] => Unit], maxRetry: Int, capability: Option[Long], persistentCapability: Option[Long])
-  (implicit is: InputSerializer[RequestMsg, ResponseMsg], os: OutputSerializer[RequestMsg, ResponseMsg]): Unit = doIfConnected {
+    sendRequest(request, callback, maxRetry, capability, None)
+
+  def sendRequest[RequestMsg, ResponseMsg](request: RequestMsg, callback: Either[Throwable, ResponseMsg] => Unit, maxRetry: Int, capability: Option[Long], persistentCapability: Option[Long])
+                                          (implicit is: InputSerializer[RequestMsg, ResponseMsg], os: OutputSerializer[RequestMsg, ResponseMsg]): Unit = doIfConnected {
     if (request == null) throw new NullPointerException
 
     val loadBalancerReady = loadBalancer.getOrElse(throw new ClusterDisconnectedException("Client has no node information"))
@@ -174,7 +174,7 @@ trait NetworkClient extends BaseNetworkClient {
         node.getOrElse(throw new NoNodesAvailableException("No node available that can handle the request: %s".format(request)))
       })
 
-    doSendRequest(Request(request, node, is, os, if (maxRetry == 0) callback else Some(retryCallback[RequestMsg, ResponseMsg](callback.get, maxRetry, capability, persistentCapability)_)))
+    doSendRequest(Request(request, node, is, os, if (maxRetry == 0) Some(callback) else Some(retryCallback[RequestMsg, ResponseMsg](callback, maxRetry, capability, persistentCapability)_)))
   }
 
   private[client] def retryCallback[RequestMsg, ResponseMsg](underlying: Either[Throwable, ResponseMsg] => Unit, maxRetry: Int, capability: Option[Long], persistentCapability: Option[Long])(res: Either[Throwable, ResponseMsg])
