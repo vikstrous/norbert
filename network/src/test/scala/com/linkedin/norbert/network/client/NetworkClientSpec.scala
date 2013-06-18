@@ -44,6 +44,7 @@ class NetworkClientSpec extends BaseNetworkClientSpecification {
       networkClient.broadcastMessage(request) must throwA[ClusterDisconnectedException]
       networkClient.sendRequestToNode(request, nodes(1)) must throwA[ClusterDisconnectedException]
       networkClient.sendRequest(request) must throwA[ClusterDisconnectedException]
+      networkClient.sendMessage(request) must throwA[ClusterDisconnectedException]
     }
 
     "continue to operating with the last known router configuration if the cluster is disconnected" in {
@@ -58,6 +59,7 @@ class NetworkClientSpec extends BaseNetworkClientSpecification {
       networkClient.broadcastMessage(request) must throwA[NetworkShutdownException]
       networkClient.sendRequestToNode(request, nodes(1)) must throwA[NetworkShutdownException]
       networkClient.sendRequest(request) must throwA[NetworkShutdownException]
+      networkClient.sendMessage(request) must throwA[NetworkShutdownException]
     }
 
     "send the provided message to the node specified by the load balancer for sendMessage" in {
@@ -179,17 +181,45 @@ class NetworkClientSpec extends BaseNetworkClientSpecification {
       }
     }
 
+    "throw InvalidClusterException if there is no load balancer instance when sendRequest is called" in {
+      clusterClient.nodes returns nodeSet
+      clusterClient.isConnected returns true
+      networkClient.clusterIoClient.nodesChanged(nodeSet) returns endpoints
+      networkClient.loadBalancerFactory.newLoadBalancer(endpoints) throws new InvalidClusterException("")
+      //      doNothing.when(clusterIoClient).sendMessage(node, message, null)
+
+      networkClient.start
+      networkClient.sendRequest(request) must throwA[InvalidClusterException]
+
+      //      clusterIoClient.sendMessage(node, message, null) wasnt called
+    }
+
     "throw InvalidClusterException if there is no load balancer instance when sendMessage is called" in {
       clusterClient.nodes returns nodeSet
       clusterClient.isConnected returns true
       networkClient.clusterIoClient.nodesChanged(nodeSet) returns endpoints
       networkClient.loadBalancerFactory.newLoadBalancer(endpoints) throws new InvalidClusterException("")
-//      doNothing.when(clusterIoClient).sendMessage(node, message, null)
+      //      doNothing.when(clusterIoClient).sendMessage(node, message, null)
 
       networkClient.start
-      networkClient.sendRequest(request) must throwA[InvalidClusterException]
+      networkClient.sendMessage(request) must throwA[InvalidClusterException]
 
-//      clusterIoClient.sendMessage(node, message, null) wasnt called
+      //      clusterIoClient.sendMessage(node, message, null) wasnt called
+    }
+
+    "throw NoSuchNodeException if load balancer returns None when sendRequest is called" in {
+      clusterClient.nodes returns nodeSet
+      clusterClient.isConnected returns true
+      networkClient.clusterIoClient.nodesChanged(nodeSet) returns endpoints
+      networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.lb
+      networkClient.lb.nextNode(None, None) returns None
+      //      doNothing.when(clusterIoClient).sendMessage(node, message, null)
+
+      networkClient.start
+      networkClient.sendRequest(request) must throwA[NoNodesAvailableException]
+
+      there was one(networkClient.lb).nextNode(None, None)
+      //      clusterIoClient.sendMessage(node, message, null) wasnt called
     }
 
     "throw NoSuchNodeException if load balancer returns None when sendMessage is called" in {
@@ -198,13 +228,13 @@ class NetworkClientSpec extends BaseNetworkClientSpecification {
       networkClient.clusterIoClient.nodesChanged(nodeSet) returns endpoints
       networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.lb
       networkClient.lb.nextNode(None, None) returns None
-//      doNothing.when(clusterIoClient).sendMessage(node, message, null)
+      //      doNothing.when(clusterIoClient).sendMessage(node, message, null)
 
       networkClient.start
-      networkClient.sendRequest(request) must throwA[NoNodesAvailableException]
+      networkClient.sendMessage(request) must throwA[NoNodesAvailableException]
 
       there was one(networkClient.lb).nextNode(None, None)
-//      clusterIoClient.sendMessage(node, message, null) wasnt called
+      //      clusterIoClient.sendMessage(node, message, null) wasnt called
     }
 
   }

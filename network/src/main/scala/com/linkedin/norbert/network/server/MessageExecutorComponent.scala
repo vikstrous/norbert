@@ -125,7 +125,7 @@ class ThreadPoolMessageExecutor(clientName: Option[String],
       if(now - queuedAt > requestTimeout) {
         totalNumRejected.incrementAndGet
         log.warn("Request timed out, ignoring! Currently = " + now + ". Queued at = " + queuedAt + ". Timeout = " + requestTimeout)
-        if(!callback.isEmpty) callback.get(Left(new HeavyLoadException))
+        callback.foreach(_(Left(new HeavyLoadException)))
       } else {
         log.debug("Executing message: %s".format(request))
 

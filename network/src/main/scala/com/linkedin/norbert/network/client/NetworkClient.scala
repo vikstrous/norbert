@@ -177,19 +177,48 @@ trait NetworkClient extends BaseNetworkClient {
     doSendRequest(Request(request, node, is, os, if (maxRetry == 0) Some(callback) else Some(retryCallback[RequestMsg, ResponseMsg](callback, maxRetry, capability, persistentCapability)_)))
   }
 
-  def sendMessage[RequestMsg, ResponseMsg](request: RequestMsg, maxRetry: Int, capability: Option[Long], persistentCapability: Option[Long])
-                                          (implicit is: InputSerializer[RequestMsg, ResponseMsg], os: OutputSerializer[RequestMsg, ResponseMsg]): Unit = doIfConnected {
-    if (request == null) throw new NullPointerException
 
-    val loadBalancerReady = loadBalancer.getOrElse(throw new ClusterDisconnectedException("Client has no node information"))
+  /**
+   * Sends a one way message to a node in the cluster. The <code>NetworkClient</code> defers to the current
+   * <code>LoadBalancer</code> to decide which <code>Node</code> the request should be sent to.
+   *
+   * @param request the message to send
+   *
+   * @throws InvalidClusterException thrown if the cluster is currently in an invalid state
+   * @throws NoNodesAvailableException thrown if the <code>LoadBalancer</code> was unable to provide a <code>Node</code>
+   * to send the request to
+   * @throws ClusterDisconnectedException thrown if the cluster is not connected when the method is called
+   */
 
-    val node = loadBalancerReady.fold(ex => throw ex,
-      lb => {
-        val node: Option[Node] = lb.nextNode(capability, persistentCapability)
-        node.getOrElse(throw new NoNodesAvailableException("No node available that can handle the request: %s".format(request)))
-      })
+  def sendMessage[RequestMsg, ResponseMsg](request: RequestMsg)
+                                          (implicit is: InputSerializer[RequestMsg, ResponseMsg], os: OutputSerializer[RequestMsg, ResponseMsg]) {
+    doIfConnected {
+      sendMessage(request, None, None)
+    }
+  }
 
-    doSendRequest(Request(request, node, is, os, None))
+  def sendMessage[RequestMsg, ResponseMsg](request: RequestMsg, capability: Option[Long])
+                                          (implicit is: InputSerializer[RequestMsg, ResponseMsg], os: OutputSerializer[RequestMsg, ResponseMsg]) {
+    doIfConnected {
+      sendMessage(request, capability, None)
+    }
+  }
+
+  def sendMessage[RequestMsg, ResponseMsg](request: RequestMsg, capability: Option[Long], persistentCapability: Option[Long])
+                                          (implicit is: InputSerializer[RequestMsg, ResponseMsg], os: OutputSerializer[RequestMsg, ResponseMsg]) {
+    doIfConnected {
+      if (request == null) throw new NullPointerException
+
+      val loadBalancerReady = loadBalancer.getOrElse(throw new ClusterDisconnectedException("Client has no node information"))
+
+      val node = loadBalancerReady.fold(ex => throw ex,
+        lb => {
+          val node: Option[Node] = lb.nextNode(capability, persistentCapability)
+          node.getOrElse(throw new NoNodesAvailableException("No node available that can handle the request: %s".format(request)))
+        })
+
+      doSendRequest(Request(request, node, is, os, None))
+    }
   }
 
   private[client] def retryCallback[RequestMsg, ResponseMsg](underlying: Either[Throwable, ResponseMsg] => Unit, maxRetry: Int, capability: Option[Long], persistentCapability: Option[Long])(res: Either[Throwable, ResponseMsg])

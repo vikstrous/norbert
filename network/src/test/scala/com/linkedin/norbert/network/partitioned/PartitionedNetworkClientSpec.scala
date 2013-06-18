@@ -49,6 +49,8 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
       networkClient.sendRequestToNode(request, nodes(1)) must throwA[ClusterDisconnectedException]
       networkClient.sendRequest(1, request) must throwA[ClusterDisconnectedException]
       networkClient.sendRequest(Set(1, 2), request) must throwA[ClusterDisconnectedException]
+      networkClient.sendMessage(1, request) must throwA[ClusterDisconnectedException]
+      networkClient.sendMessage(Set(1, 2), request) must throwA[ClusterDisconnectedException]
     }
 
     "throw ClusterShutdownException if the cluster is shut down when a method is called" in {
@@ -58,6 +60,8 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
       networkClient.sendRequestToNode(request, nodes(1)) must throwA[NetworkShutdownException]
       networkClient.sendRequest(1, request) must throwA[NetworkShutdownException]
       networkClient.sendRequest(Set(1, 2), request) must throwA[NetworkShutdownException]
+      networkClient.sendMessage(1, request) must throwA[NetworkShutdownException]
+      networkClient.sendMessage(Set(1, 2), request) must throwA[NetworkShutdownException]
     }
 
 //    "throw an InvalidMessageException if an unregistered message is sent" in {
@@ -186,12 +190,25 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
         clusterClient.isConnected returns true
         networkClient.clusterIoClient.nodesChanged(nodeSet) returns endpoints
         networkClient.loadBalancerFactory.newLoadBalancer(endpoints) throws new InvalidClusterException("")
-//      doNothing.when(clusterIoClient).sendRequest(node, message, null)
+        //      doNothing.when(clusterIoClient).sendRequest(node, message, null)
 
         networkClient.start
         networkClient.sendRequest(Set(1, 2, 3), request) must throwA[InvalidClusterException]
 
-//      clusterIoClient.sendRequest(node, message, null) wasnt called
+        //      clusterIoClient.sendRequest(node, message, null) wasnt called
+      }
+
+      "throw InvalidClusterException if there is no load balancer instance when sendMessage is called" in {
+        clusterClient.nodes returns nodeSet
+        clusterClient.isConnected returns true
+        networkClient.clusterIoClient.nodesChanged(nodeSet) returns endpoints
+        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) throws new InvalidClusterException("")
+        //      doNothing.when(clusterIoClient).sendRequest(node, message, null)
+
+        networkClient.start
+        networkClient.sendMessage(Set(1, 2, 3), request) must throwA[InvalidClusterException]
+
+        //      clusterIoClient.sendRequest(node, message, null) wasnt called
       }
 
       "throw NoSuchNodeException if load balancer returns None when sendRequest is called" in {
@@ -208,9 +225,25 @@ class PartitionedNetworkClientSpec extends BaseNetworkClientSpecification {
         there was one(networkClient.lb).nextNode(1, None, None)
 //      clusterIoClient.sendRequest(node, message, null) wasnt called
       }
+
+      "throw NoSuchNodeException if load balancer returns None when sendMessage is called" in {
+        clusterClient.nodes returns nodeSet
+        clusterClient.isConnected returns true
+        networkClient.clusterIoClient.nodesChanged(nodeSet) returns endpoints
+        networkClient.loadBalancerFactory.newLoadBalancer(endpoints) returns networkClient.loadbalancer
+        networkClient.lb.nextNode(1, None, None) returns None
+        //      doNothing.when(clusterIoClient).sendRequest(node, message, null)
+
+        networkClient.start
+        networkClient.sendMessage(Set(1, 2, 3), request) must throwA[NoNodesAvailableException]
+
+        there was one(networkClient.lb).nextNode(1, None, None)
+        //      clusterIoClient.sendRequest(node, message, null) wasnt called
+      }
     }
 
-    "when sendRequest(ids, message, messageCustomizer) is called" in {
+
+  "when sendRequest(ids, message, messageCustomizer) is called" in {
       "send the provided message to the node specified by the load balancer" in {
         clusterClient.nodes returns nodeSet
         clusterClient.isConnected returns true
