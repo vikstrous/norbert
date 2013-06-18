@@ -79,8 +79,8 @@ trait PartitionedNetworkClient[PartitionedId] extends BaseNetworkClient {
     val node = loadBalancer.getOrElse(throw new ClusterDisconnectedException).fold(ex => throw ex,
     lb => lb.nextNode(id, capability, persistentCapability).getOrElse(throw new NoNodesAvailableException("Unable to satisfy request, no node available for id %s".format(id))))
 
-  doSendRequest(PartitionedRequest(request, node, Set(id), (node: Node, ids: Set[PartitionedId]) => request, is, os, None))
-}
+    doSendRequest(PartitionedRequest(request, node, Set(id), (node: Node, ids: Set[PartitionedId]) => request, is, os, None))
+  }
 
   /**
    * Sends a <code>Message</code> to the specified <code>PartitionedId</code>. The <code>PartitionedNetworkClient</code>
