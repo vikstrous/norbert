@@ -177,6 +177,21 @@ trait NetworkClient extends BaseNetworkClient {
     doSendRequest(Request(request, node, is, os, if (maxRetry == 0) Some(callback) else Some(retryCallback[RequestMsg, ResponseMsg](callback, maxRetry, capability, persistentCapability)_)))
   }
 
+  def sendMessage[RequestMsg, ResponseMsg](request: RequestMsg, maxRetry: Int, capability: Option[Long], persistentCapability: Option[Long])
+                                          (implicit is: InputSerializer[RequestMsg, ResponseMsg], os: OutputSerializer[RequestMsg, ResponseMsg]): Unit = doIfConnected {
+    if (request == null) throw new NullPointerException
+
+    val loadBalancerReady = loadBalancer.getOrElse(throw new ClusterDisconnectedException("Client has no node information"))
+
+    val node = loadBalancerReady.fold(ex => throw ex,
+      lb => {
+        val node: Option[Node] = lb.nextNode(capability, persistentCapability)
+        node.getOrElse(throw new NoNodesAvailableException("No node available that can handle the request: %s".format(request)))
+      })
+
+    doSendRequest(Request(request, node, is, os, None))
+  }
+
   private[client] def retryCallback[RequestMsg, ResponseMsg](underlying: Either[Throwable, ResponseMsg] => Unit, maxRetry: Int, capability: Option[Long], persistentCapability: Option[Long])(res: Either[Throwable, ResponseMsg])
   (implicit is: InputSerializer[RequestMsg, ResponseMsg], os: OutputSerializer[RequestMsg, ResponseMsg]): Unit = {
     def propagate(t: Throwable) { underlying(Left(t)) }
