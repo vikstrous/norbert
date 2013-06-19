@@ -135,9 +135,9 @@ class ServerChannelHandler(clientName: Option[String],
     val request = is.requestFromBytes(requestBytes)
 
     try {
-      messageExecutor.executeMessage(request, (either: Either[Exception, Any]) => {
+      messageExecutor.executeMessage(request, Option((either: Either[Exception, Any]) => {
         responseHandler(context, e.getChannel, either)(is, os)
-      }, Some(context))(is)
+      }), Some(context))(is)
     }
     catch {
       case ex: HeavyLoadException =>
