@@ -107,6 +107,20 @@ trait PartitionedNetworkClient[PartitionedId] extends BaseNetworkClient {
     }
   }
 
+  def sendMessage[RequestMsg, ResponseMsg](ids: Set[PartitionedId], requestBuilder: (Node, Set[PartitionedId]) => RequestMsg, capability: Option[Long])
+                                          (implicit is: InputSerializer[RequestMsg, ResponseMsg], os: OutputSerializer[RequestMsg, ResponseMsg]) {
+    doIfConnected {
+      sendMessage(ids, requestBuilder, capability, None)(is, os)
+    }
+  }
+
+  def sendMessage[RequestMsg, ResponseMsg](ids: Set[PartitionedId], requestBuilder: (Node, Set[PartitionedId]) => RequestMsg)
+                                          (implicit is: InputSerializer[RequestMsg, ResponseMsg], os: OutputSerializer[RequestMsg, ResponseMsg]) {
+    doIfConnected {
+      sendMessage(ids, requestBuilder, None, None)(is, os)
+    }
+  }
+
   def sendMessage[RequestMsg, ResponseMsg](ids: Set[PartitionedId], requestBuilder: (Node, Set[PartitionedId]) => RequestMsg, capability: Option[Long], persistentCapability: Option[Long])
                                           (implicit is: InputSerializer[RequestMsg, ResponseMsg], os: OutputSerializer[RequestMsg, ResponseMsg]) {
     doIfConnected {
