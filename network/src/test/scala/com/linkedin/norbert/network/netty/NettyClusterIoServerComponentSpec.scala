@@ -19,14 +19,14 @@ package netty
 
 import org.specs.Specification
 import org.specs.mock.Mockito
-import org.jboss.netty.bootstrap.ServerBootstrap
+import org.jboss.netty.bootstrap.ConnectionlessBootstrap
 import java.net.InetSocketAddress
 import org.jboss.netty.channel.{ChannelFuture, Channel}
 import org.jboss.netty.channel.group.{ChannelGroupFuture, ChannelGroup}
 import cluster.{InvalidNodeException, Node}
 
 class NettyClusterIoServerComponentSpec extends Specification with Mockito with NettyClusterIoServerComponent {
-  val bootstrap = mock[ServerBootstrap]
+  val bootstrap = mock[ConnectionlessBootstrap]
   val channelGroup = mock[ChannelGroup]
   val clusterIoServer = new NettyClusterIoServer(bootstrap, channelGroup)
 

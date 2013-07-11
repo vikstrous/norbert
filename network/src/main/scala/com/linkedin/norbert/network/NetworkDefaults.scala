@@ -22,6 +22,11 @@ package network
 object NetworkDefaults {
 
   /**
+   * Should we use TCP or UDP as the transport?
+   */
+  val USE_TCP = true
+
+  /**
    * The default maximum number of connections to be opened per node.
    */
   val MAX_CONNECTIONS_PER_NODE = 5

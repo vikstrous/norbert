@@ -18,8 +18,8 @@ package network
 package netty
 
 import java.util.concurrent.Executors
-import org.jboss.netty.bootstrap.ServerBootstrap
-import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
+import org.jboss.netty.bootstrap.{Bootstrap, ConnectionlessBootstrap, ServerBootstrap}
+import org.jboss.netty.channel.socket.nio.{NioDatagramChannelFactory, NioServerSocketChannelFactory}
 import org.jboss.netty.handler.logging.LoggingHandler
 import org.jboss.netty.handler.codec.frame.{LengthFieldBasedFrameDecoder, LengthFieldPrepender}
 import org.jboss.netty.handler.codec.protobuf.{ProtobufDecoder, ProtobufEncoder}
@@ -35,6 +35,8 @@ class NetworkServerConfig {
   var serviceName: String = _
   var zooKeeperConnectString: String = _
   var zooKeeperSessionTimeoutMillis = 30000
+
+  var tcp = NetworkDefaults.USE_TCP
 
   var requestTimeoutMillis = NetworkDefaults.REQUEST_TIMEOUT_MILLIS
 
@@ -65,7 +67,7 @@ class NettyNetworkServer(serverConfig: NetworkServerConfig) extends NetworkServe
                                                       requestStatisticsWindow = serverConfig.requestStatisticsWindow)
 
   val executor = Executors.newCachedThreadPool(new NamedPoolThreadFactory("norbert-server-pool-%s".format(clusterClient.serviceName)))
-  val bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(executor, executor))
+  val bootstrap:Bootstrap = if(serverConfig.tcp) new ServerBootstrap(new NioServerSocketChannelFactory(executor, executor)) else new ConnectionlessBootstrap(new NioDatagramChannelFactory(executor))
   val channelGroup = new DefaultChannelGroup("norbert-server-group-%s".format(clusterClient.serviceName))
   val requestContextEncoder = new RequestContextEncoder()
 
@@ -111,7 +113,7 @@ class NettyNetworkServer(serverConfig: NetworkServerConfig) extends NetworkServe
     }
   })
 
-  val clusterIoServer = new NettyClusterIoServer(bootstrap, channelGroup)
+  val clusterIoServer = new NettyClusterIoServer(if(serverConfig.tcp) bootstrap.asInstanceOf[ServerBootstrap] else bootstrap.asInstanceOf[ConnectionlessBootstrap], channelGroup)
 
   override def shutdown = {
     if (serverConfig.clusterClient == null) clusterClient.shutdown else super.shutdown

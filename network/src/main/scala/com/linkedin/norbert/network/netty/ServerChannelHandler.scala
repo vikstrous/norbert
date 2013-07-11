@@ -31,6 +31,7 @@ import java.lang.String
 import com.google.protobuf.{ByteString}
 import norbertutils._
 import util.ProtoUtils
+import java.net.SocketAddress
 
 
 case class RequestContext(requestId: UUID, receivedAt: Long = System.currentTimeMillis) extends NorbertRequestContext
@@ -136,7 +137,7 @@ class ServerChannelHandler(clientName: Option[String],
 
     try {
       messageExecutor.executeMessage(request, Option((either: Either[Exception, Any]) => {
-        responseHandler(context, e.getChannel, either)(is, os)
+        responseHandler(e.getRemoteAddress, context, e.getChannel, either)(is, os)
       }), Some(context))(is)
     }
     catch {
@@ -148,7 +149,7 @@ class ServerChannelHandler(clientName: Option[String],
 
   override def exceptionCaught(ctx: ChannelHandlerContext, e: ExceptionEvent) = log.info(e.getCause, "Caught exception in channel: %s".format(e.getChannel))
 
-  def responseHandler[RequestMsg, ResponseMsg](context: RequestContext, channel: Channel, either: Either[Exception, ResponseMsg])
+  def responseHandler[RequestMsg, ResponseMsg](addr:SocketAddress, context: RequestContext, channel: Channel, either: Either[Exception, ResponseMsg])
   (implicit is: InputSerializer[RequestMsg, ResponseMsg], os: OutputSerializer[RequestMsg, ResponseMsg]) {
     val response = either match {
       case Left(ex) => ResponseHelper.errorResponse(context.requestId, ex)
@@ -161,7 +162,8 @@ class ServerChannelHandler(clientName: Option[String],
 
     log.debug("Sending response: %s".format(response))
 
-    channel.write((context, response))
+    // With UDP, there is no connection, so we have to pass in the address
+    channel.write((context, response), addr)
 
     statsActor.endRequest(0, context.requestId)
   }

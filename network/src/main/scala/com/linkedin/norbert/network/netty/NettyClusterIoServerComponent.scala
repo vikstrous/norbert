@@ -17,7 +17,7 @@ package com.linkedin.norbert
 package network
 package netty
 
-import org.jboss.netty.bootstrap.ServerBootstrap
+import org.jboss.netty.bootstrap.{ServerBootstrap, ConnectionlessBootstrap, Bootstrap}
 import java.net.InetSocketAddress
 import org.jboss.netty.channel.{ChannelException, Channel}
 import org.jboss.netty.channel.group.ChannelGroup
@@ -26,7 +26,7 @@ import logging.Logging
 import cluster.Node
 
 trait NettyClusterIoServerComponent extends ClusterIoServerComponent {
-  class NettyClusterIoServer(bootstrap: ServerBootstrap, channelGroup: ChannelGroup) extends ClusterIoServer with UrlParser with Logging {
+  class NettyClusterIoServer(bootstrap: Bootstrap, channelGroup: ChannelGroup) extends ClusterIoServer with UrlParser with Logging {
     private var serverChannel: Channel = _
 
     def bind(node: Node, wildcard: Boolean) = {
@@ -34,7 +34,10 @@ trait NettyClusterIoServerComponent extends ClusterIoServerComponent {
       try {
         val address = new InetSocketAddress(port)
         log.debug("Binding server socket to %s".format(address))
-        serverChannel = bootstrap.bind(address)
+        bootstrap match {
+          case bootstrap: ConnectionlessBootstrap => serverChannel = bootstrap.bind(address)
+          case bootstrap: ServerBootstrap => serverChannel = bootstrap.bind(address)
+        }
       } catch {
         case ex: ChannelException => throw new NetworkingException("Unable to bind to %s".format(node), ex)
       }

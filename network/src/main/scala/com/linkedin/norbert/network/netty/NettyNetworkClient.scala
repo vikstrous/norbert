@@ -17,8 +17,8 @@ package com.linkedin.norbert
 package network
 package netty
 
-import org.jboss.netty.bootstrap.ClientBootstrap
-import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
+import org.jboss.netty.bootstrap.{Bootstrap, ConnectionlessBootstrap, ClientBootstrap}
+import org.jboss.netty.channel.socket.nio.{NioDatagramChannelFactory, NioClientSocketChannelFactory}
 import org.jboss.netty.handler.logging.LoggingHandler
 import org.jboss.netty.handler.codec.frame.{LengthFieldBasedFrameDecoder, LengthFieldPrepender}
 import org.jboss.netty.handler.codec.protobuf.{ProtobufDecoder, ProtobufEncoder}
@@ -41,7 +41,7 @@ abstract class BaseNettyNetworkClient(clientConfig: NetworkClientConfig) extends
     clientConfig.zooKeeperSessionTimeoutMillis)
 
   private val executor = Executors.newCachedThreadPool(new NamedPoolThreadFactory("norbert-client-pool-%s".format(clusterClient.serviceName)))
-  private val bootstrap = new ClientBootstrap(new NioClientSocketChannelFactory(executor, executor))
+  private val bootstrap:Bootstrap = if (clientConfig.tcp) new ClientBootstrap(new NioClientSocketChannelFactory(executor, executor)) else new ConnectionlessBootstrap(new NioDatagramChannelFactory(executor))
   private val connectTimeoutMillis = clientConfig.connectTimeoutMillis
 
   val responseHandler = new ThreadPoolResponseHandler(
@@ -114,7 +114,7 @@ abstract class BaseNettyNetworkClient(clientConfig: NetworkClientConfig) extends
   val channelPoolFactory = new ChannelPoolFactory(maxConnections = clientConfig.maxConnectionsPerNode,
     openTimeoutMillis = clientConfig.connectTimeoutMillis,
     writeTimeoutMillis = clientConfig.writeTimeoutMillis,
-    bootstrap = bootstrap,
+    bootstrap = if (clientConfig.tcp) bootstrap.asInstanceOf[ClientBootstrap] else bootstrap.asInstanceOf[ConnectionlessBootstrap],
     closeChannelTimeMillis = clientConfig.closeChannelTimeMillis,
     errorStrategy = Some(channelPoolStrategy))
 

@@ -17,7 +17,7 @@ package com.linkedin.norbert
 package network
 package netty
 
-import org.jboss.netty.bootstrap.ClientBootstrap
+import org.jboss.netty.bootstrap.{ClientBootstrap, ServerBootstrap, ConnectionlessBootstrap, Bootstrap}
 import org.jboss.netty.channel.group.{ChannelGroup, DefaultChannelGroup}
 import org.jboss.netty.channel.{ChannelFutureListener, ChannelFuture, Channel}
 import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder
@@ -36,7 +36,7 @@ import java.util
 class ChannelPoolClosedException extends Exception
 
 class ChannelPoolFactory(maxConnections: Int, openTimeoutMillis: Int, writeTimeoutMillis: Int,
-                         bootstrap: ClientBootstrap,
+                         bootstrap: Bootstrap,
                          errorStrategy: Option[BackoffStrategy],
                          closeChannelTimeMillis: Long) {
 
@@ -59,7 +59,7 @@ class ChannelPoolFactory(maxConnections: Int, openTimeoutMillis: Int, writeTimeo
 }
 
 class ChannelPool(address: InetSocketAddress, maxConnections: Int, openTimeoutMillis: Int, writeTimeoutMillis: Int,
-                  bootstrap: ClientBootstrap,
+                  bootstrap: Bootstrap,
                   channelGroup: ChannelGroup,
                   closeChannelTimeMillis: Long,
                   val errorStrategy: Option[BackoffStrategy],
@@ -164,7 +164,12 @@ class ChannelPool(address: InetSocketAddress, maxConnections: Int, openTimeoutMi
     } else {
       log.debug("Opening a channel to: %s".format(address))
 
-      bootstrap.connect(address).addListener(new ChannelFutureListener {
+      (bootstrap match {
+        case bootstrap:ClientBootstrap =>
+          bootstrap.connect(address)
+        case bootstrap:ConnectionlessBootstrap =>
+          bootstrap.connect(address)
+      }).addListener(new ChannelFutureListener {
         def operationComplete(openFuture: ChannelFuture) = {
           if (openFuture.isSuccess) {
             val channel = openFuture.getChannel
